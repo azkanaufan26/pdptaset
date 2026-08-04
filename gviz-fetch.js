@@ -39,36 +39,51 @@ function diagnosaIsi(rows){
   return 'total baris='+rows.length+'; isi awal: '+(contoh.join(', ') || '(semua kosong)');
 }
 
-function findHeaderRow(rows){
-  // Cara 1: cari sel yang mengandung "UNIT INDUK"
+/* Cari kolom Januari lewat OFFSET dari nama bulan mana pun yang ketemu.
+   Penting: Google membuang teks header pada kolom yang isinya angka, sehingga
+   "Januari".."Juli" sering hilang dan hanya menyisakan bulan yang kolomnya masih
+   kosong (mis. "Agustus" di kolom 11 -> Januari pasti di kolom 11-7 = 4). */
+function cariJanColDariBulan(cells){
+  for(let c=0;c<cells.length;c++){
+    const t = norm(cells[c]);
+    if(!t) continue;
+    const idx = BULAN_ID.findIndex(b => norm(b) === t);
+    if(idx > -1){
+      const janCol = c - idx;
+      if(janCol >= 0) return janCol;
+    }
+  }
+  return -1;
+}
+
+function findHeaderRow(rows, cols){
+  const labelCells = (cols||[]).map(c => (c && c.label) ? c.label : '');
+
+  // Cara 1: baris yang memuat "UNIT INDUK"
   for(let r=0;r<rows.length;r++){
     const cArr = (rows[r] && rows[r].c) || [];
     for(let c=0;c<cArr.length;c++){
       if(norm(cellText(rows[r],c)).indexOf("UNIT INDUK") > -1){
-        let janCol = -1;
-        for(let c2=0;c2<cArr.length;c2++){ if(norm(cellText(rows[r],c2))==="JANUARI"){ janCol=c2; break; } }
-        if(janCol>-1) return { headerRow:r, unitCol:c, janCol };
+        const isiBaris = cArr.map((_,i)=>cellText(rows[r],i));
+        let janCol = cariJanColDariBulan(isiBaris);
+        if(janCol < 0) janCol = cariJanColDariBulan(labelCells); // coba dari label kolom
+        if(janCol > -1) return { headerRow:r, unitCol:c, janCol };
       }
     }
   }
-  // Cara 2 (cadangan): cari baris yang punya "JANUARI" + "FEBRUARI",
-  // lalu tebak kolom nama unit = kolom teks terakhir di sebelah kirinya.
+  // Cara 2: baris mana pun yang memuat minimal satu nama bulan
   for(let r=0;r<rows.length;r++){
     const cArr = (rows[r] && rows[r].c) || [];
-    let janCol=-1, febCol=-1;
-    for(let c=0;c<cArr.length;c++){
-      const t = norm(cellText(rows[r],c));
-      if(t==="JANUARI" && janCol<0) janCol=c;
-      if(t==="FEBRUARI" && febCol<0) febCol=c;
-    }
-    if(janCol>-1 && febCol>janCol){
+    const isiBaris = cArr.map((_,i)=>cellText(rows[r],i));
+    const janCol = cariJanColDariBulan(isiBaris);
+    if(janCol > -1){
       let unitCol = -1;
       for(let c=janCol-1;c>=0;c--){ if(norm(cellText(rows[r],c)) !== ''){ unitCol=c; break; } }
-      if(unitCol<0) unitCol = Math.max(janCol-1, 0);
+      if(unitCol < 0) unitCol = Math.max(janCol-1, 0);
       return { headerRow:r, unitCol, janCol };
     }
   }
-  throw new Error('Struktur sheet tidak dikenali (header "UNIT INDUK"/"Januari" tidak ketemu). DIAGNOSA: ' + diagnosaIsi(rows));
+  throw new Error('Struktur sheet tidak dikenali (nama bulan tidak ketemu di baris mana pun). DIAGNOSA: ' + diagnosaIsi(rows));
 }
 function parseUnitTable(rows, headerInfo){
   const { headerRow, unitCol, janCol } = headerInfo;
@@ -125,7 +140,7 @@ function parseGvizResponse(resp){
     rows = [barisJudul].concat(rows);
   }
 
-  const headerInfo = findHeaderRow(rows);
+  const headerInfo = findHeaderRow(rows, cols);
   const { units, totalRow } = parseUnitTable(rows, headerInfo);
 
   let blok = parseTargetBlock(rows);
