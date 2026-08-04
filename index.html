@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Monitoring Pendapatan Aset Properti — PLN</title>
+<style>
+:root{
+  --navy:#0B2A66; --biru:#1B62D6; --biru-soft:#EFF5FF;
+  --hijau:#16A34A; --hijau-soft:#ECFDF3; --oranye:#F59E0B; --oranye-soft:#FFF7E6;
+  --merah:#DC2626; --merah-soft:#FEF2F2;
+  --teks:#0F172A; --teks-2:#64748B; --teks-3:#94A3B8; --garis:#E5EAF1; --bg:#F4F7FB;
+  --sans:'Inter',-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--teks);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.app{display:flex;min-height:100vh}
+
+.side{width:186px;flex:0 0 186px;background:var(--navy);color:#fff;padding:18px 0 22px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.brand{padding:0 16px 20px}
+.brand img{display:block;width:100%;max-width:138px;height:auto;background:#fff;border-radius:9px;padding:9px 11px}
+.nav{display:flex;flex-direction:column;gap:1px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 18px;color:#C7D6F0;text-decoration:none;font-size:12.5px;border-left:3px solid transparent}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:var(--biru);color:#fff;border-left-color:#FCD116;font-weight:600}
+.nav svg{width:15px;height:15px;flex:0 0 15px;opacity:.9}
+.sidenote{margin:auto 14px 0;background:rgba(255,255,255,.07);border-radius:8px;padding:12px 13px;font-size:11px;color:#C7D6F0;line-height:1.6}
+.sidenote b{display:block;color:#fff;font-size:11.5px;margin-bottom:7px}
+.sidenote i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+
+.main{flex:1;min-width:0;padding:20px 22px 30px}
+.topbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;justify-content:space-between}
+h1{color:var(--biru);font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sub{color:var(--teks-2);font-size:13px;margin:3px 0 0}
+.per{margin:4px 0 0;font-size:12.5px;font-weight:600}
+.per span{color:var(--biru)}
+.upd{display:flex;gap:12px;align-items:center;color:var(--teks-2);font-size:11.5px}
+.upd b{color:var(--teks);font-weight:600}
+
+.livebar{display:flex;align-items:center;gap:9px;margin-top:12px;padding:9px 13px;border-radius:8px;font-size:12px;font-weight:600}
+.livebar.ok{background:var(--hijau-soft);color:#166534;border:1px solid #BBF7D0}
+.livebar.warn{background:var(--oranye-soft);color:#854D0E;border:1px solid #FDE68A}
+.livebar.loading{background:var(--biru-soft);color:#1E3A8A;border:1px solid #BFDBFE}
+.dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.dot.ok{background:#16A34A;box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+.dot.warn{background:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+.dot.loading{background:#1B62D6;box-shadow:0 0 0 3px rgba(27,98,214,.18);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:center;background:#fff;border:1px solid var(--garis);border-radius:10px;padding:11px 14px;margin-top:16px}
+.f{display:flex;align-items:center;gap:9px}
+.f label{font-size:12px;font-weight:600;color:#334155}
+select{font-family:var(--sans);font-size:12px;padding:7px 26px 7px 10px;border:1px solid #CBD5E1;border-radius:7px;background:#fff;color:var(--teks);min-width:118px;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7'><path d='M1 1l4 4 4-4' stroke='%2364748B' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 9px center}
+#reset{margin-left:auto;background:var(--biru);color:#fff;border:none;border-radius:7px;padding:9px 15px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:7px}
+#reset:hover{background:#1550B4}
+:focus-visible{outline:2px solid var(--biru);outline-offset:2px}
+
+.card{background:#fff;border:1px solid var(--garis);border-radius:11px;padding:14px 16px}
+.card h2{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#1E293B;margin:0 0 10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+.kpi{display:flex;gap:13px;align-items:flex-start}
+.ic{width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:grid;place-items:center}
+.kpi .lbl{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--teks-2);text-transform:uppercase;margin:0}
+.kpi .big{font-size:25px;font-weight:800;letter-spacing:-.03em;margin:5px 0 0;line-height:1.1}
+.kpi .cap{font-size:11.5px;color:var(--teks-2);margin:4px 0 0;line-height:1.5}
+.progress{height:7px;background:#E8EDF5;border-radius:4px;margin-top:8px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--navy);border-radius:4px;transition:width .6s ease}
+
+.grid-mid{display:grid;grid-template-columns:1.35fr 1fr 1.1fr 1.15fr;gap:14px;margin-top:14px}
+.grid-yoy{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:14px}
+.grid-bot{display:grid;grid-template-columns:1.6fr 1.05fr 1.05fr;gap:14px;margin-top:14px}
+svg.chart{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--teks-2);margin-bottom:4px}
+.legend i{display:inline-block;width:11px;height:8px;border-radius:2px;margin-right:5px;vertical-align:1px}
+.callout{border:1px solid #BBF7D0;background:var(--hijau-soft);color:#166534;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:600;line-height:1.45}
+
+.tk{list-style:none;margin:0;padding:0}
+.tk li{display:grid;grid-template-columns:16px 1fr 74px;gap:8px;align-items:center;padding:4px 0;font-size:11.5px}
+.tk .no{color:var(--teks-3);font-size:10.5px;text-align:right}
+.tk .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .br{grid-column:2/4;height:9px;background:#F1F5F9;border-radius:3px;position:relative;margin-top:-2px}
+.tk .br i{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:3px}
+.tk .br b{position:absolute;left:calc(var(--w) + 6px);top:-3px;font-size:10.5px;font-weight:700;color:var(--teks)}
+
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mini div{border:1px solid var(--garis);border-radius:9px;padding:10px 11px}
+.mini .v{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:1px 0 0}
+.mini .k{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teks-2);margin:0}
+.mini .s{font-size:10.5px;color:var(--teks-2);margin:2px 0 0}
+.mini .b1{border-color:#BFDBFE;background:var(--biru-soft)} .mini .b2{border-color:#BBF7D0;background:var(--hijau-soft)}
+.mini .b3{border-color:#FDE68A;background:var(--oranye-soft)} .mini .b4{border-color:#FECACA;background:var(--merah-soft)}
+
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--teks-2);border-bottom:1px solid var(--garis);padding:7px 6px;font-weight:700}
+td{padding:6px;border-bottom:1px solid #F1F5F9}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.t-stag{background:var(--oranye-soft);color:#B45309} .t-nol{background:var(--merah-soft);color:#B91C1C}
+.up{color:#15803D;font-weight:700} .down{color:#B91C1C;font-weight:700}
+
+.ins{background:linear-gradient(160deg,#EFF6FF,#F8FBFF);border-color:#BFDBFE}
+.ins ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ins li{display:flex;gap:9px;font-size:12px;line-height:1.5;color:#1E293B}
+.ins li svg{flex:0 0 16px;margin-top:1px}
+.foot{margin-top:16px;font-size:11px;color:var(--teks-2);display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between}
+
+@media (max-width:1240px){.grid-mid{grid-template-columns:1fr 1fr}.grid-bot,.grid-yoy{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){.side{display:none}.grid-mid,.grid4{grid-template-columns:1fr}.mini{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.dot.loading{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img src="pln-logo.png" alt="Logo PT PLN (Persero)" onerror="this.style.display='none';document.getElementById('brandFallback').style.display='block'">
+      <div id="brandFallback" style="display:none;color:#fff;font-size:19px;font-weight:800;letter-spacing:.08em;padding:6px 2px">PLN</div>
+    </div>
+    <nav class="nav">
+      <a href="#" class="on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 1 7v8h5v-5h4v5h5V7L8 1Z"/></svg>Dashboard</a>
+      <a href="#ringkasan"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 1h6v6H1V1Zm8 0h6v6H9V1ZM1 9h6v6H1V9Zm8 0h6v6H9V9Z"/></svg>Ringkasan</a>
+      <a href="#realisasi"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 13h2v2H1v-2Zm4-6h2v8H5V7Zm4-4h2v12H9V3Zm4 7h2v5h-2v-5Z"/></svg>Realisasi</a>
+      <a href="#yoy"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 14 6 6l3 4 6-9v13H1Z"/></svg>Yoy 2025–2026</a>
+      <a href="#unit"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h7v14H2V1Zm8 5h4v9h-4V6ZM4 3h3v2H4V3Zm0 4h3v2H4V7Zm0 4h3v2H4v-2Z"/></svg>Unit</a>
+      <a href="#insight"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a5 5 0 0 0-3 9v2h6V9a5 5 0 0 0-3-9ZM5 13h6v1.5H5V13Z"/></svg>Analisis</a>
+      <a href="#" onclick="window.print();return false"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 1h8v4H4V1ZM2 6h12v5h-2v4H4v-4H2V6Zm4 5h4v3H6v-3Z"/></svg>Cetak Laporan</a>
+    </nav>
+    <div class="sidenote">
+      <b>Keterangan status unit</b>
+      <p style="margin:0 0 5px"><i style="background:#4ADE80"></i>Tumbuh bulan ini</p>
+      <p style="margin:0 0 5px"><i style="background:#FBBF24"></i>Stagnan (nihil tambahan)</p>
+      <p style="margin:0"><i style="background:#F87171"></i>Belum ada realisasi</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Dashboard Monitoring Pendapatan Aset Properti</h1>
+        <p class="sub">KPI Beyond kWh — Pendayagunaan Aset Properti (Tanah dan Bangunan) PLN Group</p>
+        <p class="per">Periode: <span id="perLabel">—</span></p>
+      </div>
+      <div class="upd">
+        <span>Posisi data: <b id="updLabel">—</b></span>
+        <span style="color:var(--garis)">|</span>
+        <span>Sumber: <b>Google Sheets — Rekap 5105000101</b></span>
+      </div>
+    </div>
+
+    <div id="liveStatus" class="livebar loading"><span class="dot loading"></span><span id="liveStatusText">Memuat data terbaru dari Google Sheets…</span></div>
+
+    <div class="filters">
+      <div class="f"><label for="fTahun">Tahun</label><select id="fTahun"></select></div>
+      <div class="f"><label for="fBulan">Posisi s.d.</label><select id="fBulan"></select></div>
+      <div class="f"><label for="fKelompok">Kelompok</label><select id="fKelompok"></select></div>
+      <div class="f"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
+      <button id="reset"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8a6 6 0 1 1-1.8-4.3M14 1v4h-4"/></svg>Reset Filter</button>
+    </div>
+
+    <section id="ringkasan" class="grid4"></section>
+
+    <section id="realisasi" class="grid-mid">
+      <div class="card">
+        <h2 id="judulCombo">Target vs Realisasi Pendapatan (Kumulatif)</h2>
+        <div class="legend"><span><i style="background:#93C5FD"></i>Target (Rp Miliar)</span><span><i style="background:#0B2A66"></i>Realisasi (Rp Miliar)</span></div>
+        <div id="chartCombo"></div>
+        <div class="callout" id="calloutCombo"></div>
+      </div>
+      <div class="card">
+        <h2>Progres Target Tahunan</h2>
+        <div id="chartDonut"></div>
+        <div class="mini" style="grid-template-columns:repeat(3,1fr);margin-top:8px" id="donutMini"></div>
+      </div>
+      <div class="card">
+        <h2>Top 10 Kontributor</h2>
+        <ul class="tk" id="topKontributor"></ul>
+      </div>
+      <div class="card" id="unit">
+        <h2>Tren Pendapatan per Unit</h2>
+        <div id="chartUnit"></div>
+        <p style="font-size:11px;color:var(--teks-2);margin:6px 0 0" id="unitNote"></p>
+      </div>
+    </section>
+
+    <section id="yoy" class="grid-yoy">
+      <div class="card">
+        <h2>Perbandingan Tahun 2025 vs 2026</h2>
+        <div class="legend"><span><i style="background:#94A3B8"></i>Realisasi 2025</span><span><i style="background:#1B62D6"></i>Realisasi 2026</span><span><i style="background:#F59E0B"></i>Target 2026</span></div>
+        <div id="chartYoY"></div>
+        <div class="mini" style="grid-template-columns:repeat(4,1fr);margin-top:10px" id="yoyMini"></div>
+      </div>
+      <div class="card">
+        <h2 id="judulMover">Pergerakan Terbesar per Unit (YoY)</h2>
+        <p style="font-size:11px;color:var(--teks-2);margin:-4px 0 8px" id="moverNote"></p>
+        <table id="tblMover"><thead><tr><th>Unit</th><th class="num">2025</th><th class="num">2026</th><th class="num">Δ (Rp jt)</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <section class="grid-bot">
+      <div class="card">
+        <h2>Status Realisasi Unit Induk, Pusat &amp; Anak Perusahaan</h2>
+        <div class="mini" id="statUnit"></div>
+        <div style="margin-top:14px">
+          <h2 style="margin-bottom:6px">Kurva S — Capaian terhadap Target Tahunan</h2>
+          <div class="legend"><span><i style="background:#0B2A66"></i>Realisasi kumulatif (%)</span><span><i style="background:#F59E0B"></i>Target kumulatif (%)</span></div>
+          <div id="chartS"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Unit yang Perlu Atensi</h2>
+        <p style="font-size:11px;color:var(--teks-2);margin:-4px 0 8px">Tidak ada tambahan pendapatan pada bulan berjalan, atau belum merealisasikan pendapatan sama sekali.</p>
+        <table id="tblAtensi"><thead><tr><th>Unit</th><th class="num">Realisasi (Rp jt)</th><th>Status</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card ins" id="insight">
+        <h2>Insight untuk Manajemen</h2>
+        <ul id="insightList"></ul>
+      </div>
+    </section>
+
+    <p class="foot">
+      <span>Catatan: angka realisasi bersifat kumulatif sejak Januari. Data 2026 diambil otomatis dari Google Sheets (sheet Rekap 5105000101); data 2025 sesuai Laporan Keuangan per 31 Desember 2025.</span>
+      <span>Divisi Umum &amp; Aset Properti — PT PLN (Persero) Kantor Pusat</span>
+    </p>
+  </main>
+</div>
+<script src="data-2026-fallback.js"></script>
+<script src="data-2025.js"></script>
+<script src="gviz-fetch.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
