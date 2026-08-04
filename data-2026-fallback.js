@@ -61,5 +61,11 @@ const FALLBACK_2026 = {
 ["PLN Batam",[481570400,930239999,1300939999,2107961539,2599746739,3192051569,3192051569]],
 ["PLN Icon Plus",[0,496536919,734894632,1103606664,1314774882,1802031278,1802031278]]
 ]};
-FALLBACK_2026.units = FALLBACK_2026.units.map(([nama,v])=>({nama, grup:grupUntuk(nama), v}));
+// Dibuat tahan terhadap urutan pemuatan script: kalau grupUntuk() belum ada
+// (data-2025.js belum termuat), pakai "Lainnya" dulu — nanti diperbaiki saat dipakai.
+FALLBACK_2026.units = FALLBACK_2026.units.map(([nama,v])=>({
+  nama,
+  grup: (typeof grupUntuk === 'function') ? grupUntuk(nama) : "Lainnya",
+  v
+}));
 FALLBACK_2026.kum = Array.from({length:FALLBACK_2026.n},(_,m)=>FALLBACK_2026.units.reduce((a,d)=>a+d.v[m],0));
