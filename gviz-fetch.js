@@ -2,7 +2,7 @@
    Teknik JSONP (script tag), bukan fetch()/XHR — supaya tidak terkendala CORS,
    karena endpoint gviz Google tidak selalu mengirim header CORS untuk permintaan lintas-origin. */
 
-const GVIZ_FILE_ID = "1q9f-1edCwsR488dRTmUHyZxy3rBEo5wT";
+const GVIZ_FILE_ID = "1pJ7S4GBoa8O0Fi-KOsVtTlOzBZSnsAQ0ea9bUS-v5F4";
 const GVIZ_GID = "1664615468"; // tab "Rekap 5105000101"
 const GVIZ_TIMEOUT_MS = 12000;
 
