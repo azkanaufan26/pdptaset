@@ -35,18 +35,13 @@ function findHeaderRow(rows){
 function parseUnitTable(rows, headerInfo){
   const { headerRow, unitCol, janCol } = headerInfo;
   const units = []; let totalRow = null;
-  for(let r=headerRow+2; r<rows.length; r++){
+  for(let r=headerRow+1; r<rows.length; r++){
     const nama = cellText(rows[r], unitCol);
-    if(nama === null){
-      let blankStreak=0, rr=r;
-      while(rr<rows.length && cellText(rows[rr],unitCol)===null){ blankStreak++; rr++; if(blankStreak>2) break; }
-      if(blankStreak>2) break;
-      continue;
-    }
+    if(nama === null) continue;                 // baris kosong (pemisah kelompok) — lewati saja
+    if(/^[a-z]$/i.test(nama)) continue;          // baris penanda kolom "a b c d ..." — bukan unit
     if(nama.toUpperCase()==="TOTAL"){ totalRow = BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)); break; }
-    if(typeof nama === 'string' && nama.trim() !== ''){
-      units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
-    }
+    if(nama.toUpperCase()==="UNIT INDUK") continue; // header duplikat, lewati
+    units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
   }
   if(!totalRow) throw new Error('Baris "TOTAL" tidak ditemukan.');
   return { units, totalRow };
@@ -69,7 +64,18 @@ function parseTargetBlock(rows){
   };
 }
 function parseGvizResponse(resp){
-  const rows = resp.table.rows;
+  let rows = resp.table.rows;
+
+  /* Jaring pengaman: kalau Google tetap "memakan" baris judul dan memindahkannya
+     jadi label kolom (resp.table.cols[].label), bangun ulang baris itu di depan
+     supaya pencarian header tetap ketemu. */
+  const cols = resp.table.cols || [];
+  const adaLabel = cols.some(c => c && c.label && String(c.label).trim() !== '');
+  if(adaLabel){
+    const barisJudul = { c: cols.map(c => (c && c.label) ? { v: c.label } : null) };
+    rows = [barisJudul].concat(rows);
+  }
+
   const headerInfo = findHeaderRow(rows);
   const { units, totalRow } = parseUnitTable(rows, headerInfo);
   const { realKum, targetKum } = parseTargetBlock(rows);
@@ -123,8 +129,11 @@ function loadLiveData(onSuccess, onFailure){
   // PENTING: parameter di dalam tqx dipisah dengan TITIK DUA (responseHandler:namaFungsi),
   // bukan tanda sama dengan. Kalau salah, Google mengabaikan callback kita dan
   // memakai handler bawaannya, sehingga respons tidak pernah sampai -> timeout.
+  // headers=0 : jangan biarkan Google menebak-nebak baris mana yang jadi judul kolom —
+  // kirim SEMUA baris apa adanya, karena baris "UNIT INDUK" ada di tengah sheet (baris 6),
+  // bukan di baris pertama, dan kita mencarinya sendiri lewat teksnya.
   s.src = "https://docs.google.com/spreadsheets/d/" + GVIZ_FILE_ID + "/gviz/tq?gid=" + GVIZ_GID +
-          "&tqx=out:json;responseHandler:" + cbName;
+          "&headers=0&tqx=out:json;responseHandler:" + cbName;
   s.onerror = function(){
     if(done) return; done = true;
     clearTimeout(timer);
