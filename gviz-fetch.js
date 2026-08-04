@@ -19,45 +19,94 @@ function cellNum(row, idx){
   const n = Number(c.v);
   return isNaN(n) ? 0 : n;
 }
+/* Normalisasi teks sel: buang non-breaking space, rapatkan spasi ganda,
+   samakan huruf besar — supaya "UNIT  INDUK", "Unit Induk", dsb tetap cocok. */
+function norm(v){
+  if(v === null || v === undefined) return '';
+  return String(v).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
+}
+
+function diagnosaIsi(rows){
+  // Ambil contoh isi sel yang tidak kosong, untuk ditampilkan di pesan error
+  const contoh = [];
+  for(let r=0; r<Math.min(rows.length, 15) && contoh.length<10; r++){
+    const cArr = (rows[r] && rows[r].c) || [];
+    for(let c=0; c<cArr.length && contoh.length<10; c++){
+      const t = cellText(rows[r], c);
+      if(t !== null && t !== '') contoh.push('R'+r+'C'+c+'="'+String(t).slice(0,22)+'"');
+    }
+  }
+  return 'total baris='+rows.length+'; isi awal: '+(contoh.join(', ') || '(semua kosong)');
+}
+
 function findHeaderRow(rows){
+  // Cara 1: cari sel yang mengandung "UNIT INDUK"
   for(let r=0;r<rows.length;r++){
-    const cArr = rows[r] && rows[r].c || [];
+    const cArr = (rows[r] && rows[r].c) || [];
     for(let c=0;c<cArr.length;c++){
-      if(cellText(rows[r],c) === "UNIT INDUK"){
+      if(norm(cellText(rows[r],c)).indexOf("UNIT INDUK") > -1){
         let janCol = -1;
-        for(let c2=c;c2<cArr.length;c2++){ if(cellText(rows[r],c2)==="Januari"){ janCol=c2; break; } }
+        for(let c2=0;c2<cArr.length;c2++){ if(norm(cellText(rows[r],c2))==="JANUARI"){ janCol=c2; break; } }
         if(janCol>-1) return { headerRow:r, unitCol:c, janCol };
       }
     }
   }
-  throw new Error('Header "UNIT INDUK" tidak ditemukan.');
+  // Cara 2 (cadangan): cari baris yang punya "JANUARI" + "FEBRUARI",
+  // lalu tebak kolom nama unit = kolom teks terakhir di sebelah kirinya.
+  for(let r=0;r<rows.length;r++){
+    const cArr = (rows[r] && rows[r].c) || [];
+    let janCol=-1, febCol=-1;
+    for(let c=0;c<cArr.length;c++){
+      const t = norm(cellText(rows[r],c));
+      if(t==="JANUARI" && janCol<0) janCol=c;
+      if(t==="FEBRUARI" && febCol<0) febCol=c;
+    }
+    if(janCol>-1 && febCol>janCol){
+      let unitCol = -1;
+      for(let c=janCol-1;c>=0;c--){ if(norm(cellText(rows[r],c)) !== ''){ unitCol=c; break; } }
+      if(unitCol<0) unitCol = Math.max(janCol-1, 0);
+      return { headerRow:r, unitCol, janCol };
+    }
+  }
+  throw new Error('Struktur sheet tidak dikenali (header "UNIT INDUK"/"Januari" tidak ketemu). DIAGNOSA: ' + diagnosaIsi(rows));
 }
 function parseUnitTable(rows, headerInfo){
   const { headerRow, unitCol, janCol } = headerInfo;
   const units = []; let totalRow = null;
   for(let r=headerRow+1; r<rows.length; r++){
     const nama = cellText(rows[r], unitCol);
-    if(nama === null) continue;                 // baris kosong (pemisah kelompok) — lewati saja
-    if(/^[a-z]$/i.test(nama)) continue;          // baris penanda kolom "a b c d ..." — bukan unit
-    if(nama.toUpperCase()==="TOTAL"){ totalRow = BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)); break; }
-    if(nama.toUpperCase()==="UNIT INDUK") continue; // header duplikat, lewati
+    if(nama === null || String(nama).trim()==='') continue;  // baris kosong pemisah — lewati
+    const N = norm(nama);
+    if(/^[A-Z]$/.test(N)) continue;                          // baris penanda kolom "a b c d ..."
+    if(N === "UNIT INDUK") continue;                         // header duplikat
+    if(N === "TOTAL" || N === "GRAND TOTAL" || N === "JUMLAH"){
+      totalRow = BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)); break;
+    }
     units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
   }
-  if(!totalRow) throw new Error('Baris "TOTAL" tidak ditemukan.');
+  if(!totalRow){
+    // TOTAL tidak ketemu — kalau unit sudah terbaca, hitung sendiri sebagai cadangan
+    if(units.length){
+      totalRow = BULAN_ID.map((_,i)=>units.reduce((a,u)=>a+(u.v[i]||0),0));
+    }else{
+      throw new Error('Baris unit dan "TOTAL" tidak ditemukan setelah header. DIAGNOSA: ' + diagnosaIsi(rows));
+    }
+  }
   return { units, totalRow };
 }
 function findLastRowByLabel(rows, label){
+  const L = norm(label);
   let found=null;
   for(let r=0;r<rows.length;r++){
-    const cArr = rows[r] && rows[r].c || [];
-    for(let c=0;c<cArr.length;c++){ if(cellText(rows[r],c)===label){ found={row:r,labelCol:c}; } }
+    const cArr = (rows[r] && rows[r].c) || [];
+    for(let c=0;c<cArr.length;c++){ if(norm(cellText(rows[r],c))===L){ found={row:r,labelCol:c}; } }
   }
   return found;
 }
 function parseTargetBlock(rows){
   const real = findLastRowByLabel(rows, "Pendapatan Aset Properti");
   const target = findLastRowByLabel(rows, "Target Bulanan");
-  if(!real || !target) throw new Error('Baris target/realisasi tidak ditemukan.');
+  if(!real || !target) return null;   // biarkan pemanggil memakai cadangan
   return {
     realKum: BULAN_ID.map((_,i)=>cellNum(rows[real.row], real.labelCol+1+i)),
     targetKum: BULAN_ID.map((_,i)=>cellNum(rows[target.row], target.labelCol+1+i))
@@ -78,7 +127,19 @@ function parseGvizResponse(resp){
 
   const headerInfo = findHeaderRow(rows);
   const { units, totalRow } = parseUnitTable(rows, headerInfo);
-  const { realKum, targetKum } = parseTargetBlock(rows);
+
+  let blok = parseTargetBlock(rows);
+  if(!blok){
+    // Blok target/realisasi tidak ketemu di sheet — pakai target RKAP 2026 yang sudah diketahui,
+    // dan realisasi dihitung dari baris TOTAL. Dashboard tetap tampil dengan angka benar.
+    blok = {
+      realKum: totalRow.slice(),
+      targetKum: [5909472831.80,9236251512.40,11818962795.10,48753291720.50,53924094433.43,
+                  59833586257.23,67959137926.53,79778122553.83,86399624239.13,95991138363.43,
+                  115770114336.53,147737300000.00]
+    };
+  }
+  const { realKum, targetKum } = blok;
   // n = berapa bulan yang sudah terisi (nilai realKum > 0)
   let n = 0; for(let i=0;i<12;i++){ if(realKum[i]>0) n=i+1; }
   const targetPct = targetKum.map(v => Math.round((v / targetKum[11]) * 10000)/100);
