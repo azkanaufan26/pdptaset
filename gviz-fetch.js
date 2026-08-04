@@ -107,9 +107,24 @@ function loadLiveData(onSuccess, onFailure){
     }catch(e){ onFailure(e); }
   };
 
+  /* Jaring pengaman: kalau karena satu dan lain hal Google tetap memakai handler
+     bawaannya (google.visualization.Query.setResponse) alih-alih callback kita,
+     tangkap juga dari sana supaya tidak berakhir timeout. */
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  const prevSetResponse = window.google.visualization.Query.setResponse;
+  window.google.visualization.Query.setResponse = function(resp){
+    if(typeof window[cbName] === 'function'){ window[cbName](resp); }
+    else if(typeof prevSetResponse === 'function'){ prevSetResponse(resp); }
+  };
+
   const s = document.createElement('script');
+  // PENTING: parameter di dalam tqx dipisah dengan TITIK DUA (responseHandler:namaFungsi),
+  // bukan tanda sama dengan. Kalau salah, Google mengabaikan callback kita dan
+  // memakai handler bawaannya, sehingga respons tidak pernah sampai -> timeout.
   s.src = "https://docs.google.com/spreadsheets/d/" + GVIZ_FILE_ID + "/gviz/tq?gid=" + GVIZ_GID +
-          "&tqx=out:json;responseHandler=" + cbName;
+          "&tqx=out:json;responseHandler:" + cbName;
   s.onerror = function(){
     if(done) return; done = true;
     clearTimeout(timer);
