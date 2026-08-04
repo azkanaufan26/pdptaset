@@ -104,14 +104,21 @@ function isiUnit(){
   if(!list.some(d=>d.nama===fUnit)) fUnit=list.length?list[0].nama:"";
   el('fUnit').value=fUnit;
 }
+function renderSafe(){
+  try{ render(); }
+  catch(e){
+    console.error('Render error saat ganti filter:', e);
+    setLiveStatus('warn', 'Terjadi error saat menerapkan filter: ' + e.message + ' — screenshot pesan ini dan kirim untuk diperbaiki.');
+  }
+}
 function wireFilters(){
   el('fKelompok').innerHTML = `<option value="semua">Semua kelompok</option>`+Object.values(G).map(g=>`<option value="${g}">${g}</option>`).join('');
-  el('fTahun').onchange=e=>{fTahun=e.target.value;fBulan=TAHUN[fTahun].n-1;isiBulan();isiUnit();render();};
-  el('fBulan').onchange=e=>{fBulan=+e.target.value;render();};
-  el('fKelompok').onchange=e=>{fKelompok=e.target.value;isiUnit();render();};
-  el('fUnit').onchange=e=>{fUnit=e.target.value;render();};
+  el('fTahun').onchange=e=>{fTahun=e.target.value;fBulan=TAHUN[fTahun].n-1;isiBulan();isiUnit();renderSafe();};
+  el('fBulan').onchange=e=>{fBulan=+e.target.value;renderSafe();};
+  el('fKelompok').onchange=e=>{fKelompok=e.target.value;isiUnit();renderSafe();};
+  el('fUnit').onchange=e=>{fUnit=e.target.value;renderSafe();};
   el('reset').onclick=()=>{fTahun="2026";fBulan=TAHUN["2026"].n-1;fKelompok='semua';fUnit='Kantor Pusat';
-    el('fTahun').value=fTahun;el('fKelompok').value='semua';isiBulan();isiUnit();render();};
+    el('fTahun').value=fTahun;el('fKelompok').value='semua';isiBulan();isiUnit();renderSafe();};
 }
 
 /* ── render utama (sama seperti versi sebelumnya) ── */
@@ -239,10 +246,21 @@ function render(){
 }
 
 /* ══ inisialisasi: coba live fetch dulu, fallback kalau gagal ══ */
+function sanitizeUnits(data){
+  // buang baris yang lolos parsing tapi nama-nya tidak valid (bukan teks / kosong) —
+  // jaring pengaman terakhir supaya satu baris aneh di sheet tidak merusak seluruh dashboard.
+  if(data && Array.isArray(data.units)){
+    data.units = data.units.filter(u => u && typeof u.nama === 'string' && u.nama.trim() !== '' && Array.isArray(u.v));
+  }
+  return data;
+}
+
 function boot(withData, isLive, note){
+  sanitizeUnits(withData);
   TAHUN["2026"] = withData;
   dataSourceNote = note || "";
-  fTahun="2026"; fBulan=withData.n-1; fKelompok="semua"; fUnit="Kantor Pusat";
+  fTahun="2026"; fBulan=withData.n-1; fKelompok="semua";
+  fUnit = withData.units.some(u=>u.nama==="Kantor Pusat") ? "Kantor Pusat" : (withData.units[0]?.nama || "");
   isiTahun(); isiBulan(); isiUnit(); wireFilters(); render();
   if(isLive){
     setLiveStatus('ok', 'Data 2026 berhasil dimuat langsung dari Google Sheets (posisi bulan ' + BULAN[withData.n-1] + ').');
@@ -251,7 +269,30 @@ function boot(withData, isLive, note){
   }
 }
 
+/* boot dengan try/catch — kalau data live berhasil diambil tapi ada yang tidak terduga
+   saat diproses/ditampilkan, dashboard tetap jatuh ke data cadangan dan menampilkan
+   PESAN ERROR ASLINYA di banner (bukan macet diam-diam), supaya gampang didiagnosis
+   cukup dari screenshot, tanpa perlu buka DevTools. */
+function bootSafe(withData, isLive, note){
+  try{
+    boot(withData, isLive, note);
+  }catch(e){
+    console.error('Dashboard render error:', e);
+    if(isLive){
+      // data live gagal diproses -> coba lagi pakai data cadangan
+      try{
+        boot(FALLBACK_2026, false, 'Data live berhasil diambil tapi gagal ditampilkan (' + e.message + ').');
+      }catch(e2){
+        console.error('Fallback juga gagal:', e2);
+        setLiveStatus('warn', 'Terjadi error saat menampilkan dashboard: ' + e2.message + ' — screenshot pesan ini dan kirim untuk diperbaiki.');
+      }
+    }else{
+      setLiveStatus('warn', 'Terjadi error saat menampilkan data cadangan: ' + e.message + ' — screenshot pesan ini dan kirim untuk diperbaiki.');
+    }
+  }
+}
+
 loadLiveData(
-  function(liveData){ boot(liveData, true); },
-  function(err){ boot(FALLBACK_2026, false, err.message); }
+  function(liveData){ bootSafe(liveData, true); },
+  function(err){ bootSafe(FALLBACK_2026, false, err.message); }
 );
