@@ -19,40 +19,35 @@ function setLiveStatus(kind, text){
 
 /* ── charts (sama seperti versi sebelumnya) ── */
 function chartCombo(cfg,m){
-  const W=560,H=250,L=38,R=8,T=18,B=26,iw=W-L-R,ih=H-T-B;
+  const W=620,H=300,L=46,R=12,T=26,B=30,iw=W-L-R,ih=H-T-B;
   const maks=Math.ceil(Math.max(...cfg.target,...cfg.kum.map(v=>v/1e9))/40)*40 || 40;
   const x=i=>L+iw/12*i+iw/24, y=v=>T+ih-(v/maks)*ih;
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Target dan realisasi kumulatif">`;
-  for(let g=0;g<=4;g++){const v=maks/4*g;s+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="#EEF2F7"/><text x="${L-6}" y="${y(v)+3.5}" text-anchor="end" font-size="8.5" fill="#94A3B8">${v}</text>`;}
-  s+=`<text x="${L-6}" y="${T-6}" text-anchor="end" font-size="8" fill="#94A3B8">Rp M</text>`;
-  cfg.target.forEach((t,i)=>{const bw=iw/12*0.52;s+=`<rect x="${x(i)-bw/2}" y="${y(t)}" width="${bw}" height="${T+ih-y(t)}" rx="2" fill="#93C5FD"/>`;
-    if(i<=m)s+=`<text x="${x(i)}" y="${y(t)-4}" text-anchor="middle" font-size="8" fill="#64748B">${P(t)}</text>`;});
+  for(let g=0;g<=4;g++){const v=maks/4*g;s+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="#EEF2F7"/><text x="${L-7}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="#94A3B8">${v}</text>`;}
+  s+=`<text x="${L-7}" y="${T-10}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
+  cfg.target.forEach((t,i)=>{const bw=iw/12*0.56;s+=`<rect x="${x(i)-bw/2}" y="${y(t)}" width="${bw}" height="${T+ih-y(t)}" rx="2" fill="#93C5FD"/>`;
+    if(i<=m)s+=`<text x="${x(i)}" y="${y(t)-5}" text-anchor="middle" font-size="9" fill="#64748B">${P(t)}</text>`;});
   const seri=cfg.kum.slice(0,m+1);
-  s+=`<polyline points="${seri.map((v,i)=>`${x(i)},${y(v/1e9)}`).join(' ')}" fill="none" stroke="#0B2A66" stroke-width="2.2" stroke-linejoin="round"/>`;
-  seri.forEach((v,i)=>{s+=`<circle cx="${x(i)}" cy="${y(v/1e9)}" r="3.2" fill="#0B2A66"/><text x="${x(i)}" y="${y(v/1e9)-9}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0B2A66">${M(v)}</text>`;});
-  BULAN_S.forEach((b,i)=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="8.5" fill="${i<=m?'#334155':'#CBD5E1'}">${b}</text>`;});
+  s+=`<polyline points="${seri.map((v,i)=>`${x(i)},${y(v/1e9)}`).join(' ')}" fill="none" stroke="#0B2A66" stroke-width="2.6" stroke-linejoin="round"/>`;
+  seri.forEach((v,i)=>{s+=`<circle cx="${x(i)}" cy="${y(v/1e9)}" r="3.6" fill="#0B2A66"/><text x="${x(i)}" y="${y(v/1e9)-11}" text-anchor="middle" font-size="10" font-weight="700" fill="#0B2A66">${M(v)}</text>`;});
+  BULAN_S.forEach((b,i)=>{s+=`<text x="${x(i)}" y="${H-9}" text-anchor="middle" font-size="10" fill="${i<=m?'#334155':'#CBD5E1'}">${b}</text>`;});
   return s+`</svg>`;
 }
-function chartDonut(pct){
-  const r=52,c=2*Math.PI*r,dash=Math.min(pct,100)/100*c;
-  const warna=pct>=100?'#16A34A':'#1B62D6';
-  return `<svg class="chart" viewBox="0 0 220 150" role="img" aria-label="Progres ${P(pct)} persen">
-  <g transform="translate(110,72)"><circle r="${r}" fill="none" stroke="#E8EDF5" stroke-width="18"/>
-  <circle r="${r}" fill="none" stroke="${warna}" stroke-width="18" stroke-linecap="round" stroke-dasharray="${dash} ${c}" transform="rotate(-90)"/>
-  <text y="4" text-anchor="middle" font-size="26" font-weight="800" fill="${warna}">${P(pct)}%</text>
-  <text y="22" text-anchor="middle" font-size="9.5" fill="#64748B">dari target tahunan</text></g></svg>`;
-}
 function chartUnit(v,m,nama){
-  const W=300,H=190,L=38,R=10,T=16,B=24,iw=W-L-R,ih=H-T-B;
-  const arr=v.slice(0,m+1),maks=Math.max(...arr.map(a=>a/1e9),0.001)*1.25;
+  const W=440,H=270,L=46,R=16,T=26,B=28,iw=W-L-R,ih=H-T-B;
+  const arr=v.slice(0,m+1),maks=Math.max(...arr.map(a=>a/1e9),0.001)*1.3;
   const x=i=>L+(arr.length<2?iw/2:iw/(arr.length-1)*i),y=n=>T+ih-(n/maks)*ih;
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren ${nama}">`;
-  for(let g=0;g<=4;g++){const val=maks/4*g;s+=`<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" stroke="#EEF2F7"/><text x="${L-5}" y="${y(val)+3.5}" text-anchor="end" font-size="8" fill="#94A3B8">${val.toLocaleString('id-ID',{maximumFractionDigits:val<1?1:0})}</text>`;}
-  s+=`<text x="${L-5}" y="${T-5}" text-anchor="end" font-size="7.5" fill="#94A3B8">Rp M</text>`;
-  s+=`<polyline points="${arr.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.2"/>`;
-  arr.forEach((n,i)=>{s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="2.8" fill="#1B62D6"/>`;
-    if(i===arr.length-1)s+=`<text x="${x(i)}" y="${y(n/1e9)-8}" text-anchor="end" font-size="9" font-weight="700" fill="#1B62D6">${M(n)}</text>`;
-    if(arr.length<=7||i%2===0)s+=`<text x="${x(i)}" y="${H-7}" text-anchor="middle" font-size="7.5" fill="#64748B">${BULAN_S[i]}</text>`;});
+  for(let g=0;g<=4;g++){const val=maks/4*g;s+=`<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" stroke="#EEF2F7"/><text x="${L-6}" y="${y(val)+3.5}" text-anchor="end" font-size="9.5" fill="#94A3B8">${val.toLocaleString('id-ID',{maximumFractionDigits:val<1?1:0})}</text>`;}
+  s+=`<text x="${L-6}" y="${T-10}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
+  s+=`<polyline points="${arr.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
+  arr.forEach((n,i)=>{
+    s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="3.4" fill="#1B62D6"/>`;
+    // label nilai di SETIAP bulan; digeser agar tidak keluar bidang di ujung kiri/kanan
+    const anchor = i===0 ? 'start' : (i===arr.length-1 ? 'end' : 'middle');
+    s+=`<text x="${x(i)}" y="${y(n/1e9)-10}" text-anchor="${anchor}" font-size="10" font-weight="700" fill="#0B2A66">${M(n)}</text>`;
+    s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9.5" fill="#64748B">${BULAN_S[i]}</text>`;
+  });
   return s+`</svg>`;
 }
 function chartS(cfg,m){
@@ -147,7 +142,7 @@ function render(){
           <span style="font-size:11px">${BULAN[mm]}: 2026 <b>${M(y26)}</b> vs 2025 <b>${M(y25)}</b> (<b style="color:${yoyPct>=0?'#16A34A':'#DC2626'}">${yoyPct>=0?'+':''}${P(yoyPct)}%</b>)</span>`},
     {ic:'#EFF5FF',st:'#1B62D6',path:'M8 2v12M2 8h12',lbl:'Target Tahunan',warna:'#0B2A66',
      big:`Rp ${P(cfg.targetThn)} M`,
-     cap:`<div class="progress"><i style="width:${Math.min(progThn,100)}%"></i></div><span style="display:block;margin-top:4px">${P(progThn)}% dari target tahunan ${fTahun}</span>`},
+     cap:`<div class="progress"><i style="width:${Math.min(progThn,100)}%"></i></div><span style="display:block;margin-top:4px">${P(progThn)}% tercapai · ${progThn>=100?'surplus':'sisa'} <b style="color:${progThn>=100?'#15803D':'#B45309'}">Rp ${P(Math.abs(cfg.targetThn-realTotal/1e9))} M</b></span>`},
     {ic:'#ECFDF3',st:'#16A34A',path:'M3 8l3 3 7-7',lbl:'Target YTD',warna:'#16A34A',
      big:`Rp ${P(targetYtd)} M`,
      cap:`ACHIEVEMENT<br><b style="font-size:16px;color:${capaian>=100?'#16A34A':'#DC2626'}">${P(capaian)}%</b>`},
@@ -165,12 +160,6 @@ function render(){
   el('calloutCombo').innerHTML=selisih>=0
     ?`Realisasi YTD melampaui target: <b>+Rp ${P(selisih)} M</b> (+${P(capaian-100)}% di atas target ${BULAN[m]} ${fTahun})`
     :`Realisasi YTD di bawah target: <b>Rp ${P(selisih)} M</b> (${P(capaian)}% dari target ${BULAN[m]} ${fTahun})`;
-
-  el('chartDonut').innerHTML=chartDonut(progThn);
-  el('donutMini').innerHTML=`
-    <div><p class="k">Realisasi</p><p class="v" style="font-size:15px;color:#1B62D6">${M(realTotal)} M</p></div>
-    <div><p class="k">Target</p><p class="v" style="font-size:15px">${P(cfg.targetThn)} M</p></div>
-    <div><p class="k">${progThn>=100?'Surplus':'Sisa'}</p><p class="v" style="font-size:15px;color:${progThn>=100?'#15803D':'#B45309'}">${P(Math.abs(cfg.targetThn-realTotal/1e9))} M</p></div>`;
 
   const top=[...lingkup].sort((a,b)=>b.v[m]-a.v[m]).slice(0,10);
   const maksTop=top[0]?.v[m]||1;
