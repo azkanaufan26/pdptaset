@@ -69,7 +69,7 @@ select{font-family:var(--sans);font-size:12px;padding:7px 26px 7px 10px;border:1
 .progress{height:7px;background:#E8EDF5;border-radius:4px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--navy);border-radius:4px;transition:width .6s ease}
 
-.grid-mid{display:grid;grid-template-columns:1.35fr 1fr 1.1fr 1.15fr;gap:14px;margin-top:14px}
+.grid-mid{display:grid;grid-template-columns:0.95fr 1.5fr 1.35fr;gap:14px;margin-top:14px}
 .grid-yoy{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:14px}
 .grid-bot{display:grid;grid-template-columns:1.6fr 1.05fr 1.05fr;gap:14px;margin-top:14px}
 svg.chart{width:100%;height:auto;display:block}
@@ -165,19 +165,14 @@ tr:last-child td{border-bottom:none}
 
     <section id="realisasi" class="grid-mid">
       <div class="card">
+        <h2>Top 10 Kontributor</h2>
+        <ul class="tk" id="topKontributor"></ul>
+      </div>
+      <div class="card">
         <h2 id="judulCombo">Target vs Realisasi Pendapatan (Kumulatif)</h2>
         <div class="legend"><span><i style="background:#93C5FD"></i>Target (Rp Miliar)</span><span><i style="background:#0B2A66"></i>Realisasi (Rp Miliar)</span></div>
         <div id="chartCombo"></div>
         <div class="callout" id="calloutCombo"></div>
-      </div>
-      <div class="card">
-        <h2>Progres Target Tahunan</h2>
-        <div id="chartDonut"></div>
-        <div class="mini" style="grid-template-columns:repeat(3,1fr);margin-top:8px" id="donutMini"></div>
-      </div>
-      <div class="card">
-        <h2>Top 10 Kontributor</h2>
-        <ul class="tk" id="topKontributor"></ul>
       </div>
       <div class="card" id="unit">
         <h2>Tren Pendapatan per Unit</h2>
