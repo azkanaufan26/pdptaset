@@ -44,7 +44,9 @@ function parseUnitTable(rows, headerInfo){
       continue;
     }
     if(nama.toUpperCase()==="TOTAL"){ totalRow = BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)); break; }
-    units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
+    if(typeof nama === 'string' && nama.trim() !== ''){
+      units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
+    }
   }
   if(!totalRow) throw new Error('Baris "TOTAL" tidak ditemukan.');
   return { units, totalRow };
