@@ -251,6 +251,14 @@ function sanitizeUnits(data){
   // jaring pengaman terakhir supaya satu baris aneh di sheet tidak merusak seluruh dashboard.
   if(data && Array.isArray(data.units)){
     data.units = data.units.filter(u => u && typeof u.nama === 'string' && u.nama.trim() !== '' && Array.isArray(u.v));
+    // perbaiki label kelompok kalau sempat terisi "Lainnya" karena urutan pemuatan script
+    if(typeof grupUntuk === 'function'){
+      data.units.forEach(u => { if(!u.grup || u.grup === 'Lainnya') u.grup = grupUntuk(u.nama); });
+    }
+  }
+  // hitung ulang total kumulatif kalau belum ada / tidak lengkap
+  if(data && Array.isArray(data.units) && (!Array.isArray(data.kum) || data.kum.length < data.n)){
+    data.kum = Array.from({length:data.n},(_,m)=>data.units.reduce((a,d)=>a+(d.v[m]||0),0));
   }
   return data;
 }
