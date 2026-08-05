@@ -63,28 +63,6 @@ function chartS(cfg,m){
   BULAN_S.forEach((b,i)=>{s+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="8" fill="${i<=m?'#334155':'#CBD5E1'}">${b}</text>`;});
   return s+`</svg>`;
 }
-function chartYoY(mm){
-  const a=TAHUN["2025"],b=TAHUN["2026"];
-  const W=560,H=210,L=38,R=10,T=16,B=24,iw=W-L-R,ih=H-T-B;
-  const maks=Math.ceil(Math.max(...a.kum.map(v=>v/1e9),...b.target)/40)*40 || 40;
-  const x=i=>L+iw/11*i,y=v=>T+ih-(v/maks)*ih;
-  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Perbandingan 2025 dan 2026">`;
-  for(let g=0;g<=4;g++){const v=maks/4*g;s+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="#EEF2F7"/><text x="${L-5}" y="${y(v)+3.5}" text-anchor="end" font-size="8" fill="#94A3B8">${v}</text>`;}
-  s+=`<text x="${L-5}" y="${T-5}" text-anchor="end" font-size="7.5" fill="#94A3B8">Rp M</text>`;
-  s+=`<polyline points="${b.target.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="5 3"/>`;
-  s+=`<polyline points="${a.kum.map((v,i)=>`${x(i)},${y(v/1e9)}`).join(' ')}" fill="none" stroke="#94A3B8" stroke-width="2.2"/>`;
-  a.kum.forEach((v,i)=>{s+=`<circle cx="${x(i)}" cy="${y(v/1e9)}" r="2.4" fill="#94A3B8"/>`;});
-  s+=`<text x="${x(11)}" y="${y(a.kum[11]/1e9)-8}" text-anchor="end" font-size="9" font-weight="700" fill="#64748B">${M(a.kum[11])}</text>`;
-  const seri26 = b.kum.slice(0,mm+1);
-  s+=`<polyline points="${seri26.map((v,i)=>`${x(i)},${y(v/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
-  seri26.forEach((v,i)=>{s+=`<circle cx="${x(i)}" cy="${y(v/1e9)}" r="3" fill="#1B62D6"/>`;});
-  if(seri26.length) s+=`<text x="${x(seri26.length-1)}" y="${y(seri26[seri26.length-1]/1e9)-9}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1B62D6">${M(seri26[seri26.length-1])}</text>`;
-  s+=`<line x1="${x(mm)}" y1="${T}" x2="${x(mm)}" y2="${T+ih}" stroke="#CBD5E1" stroke-dasharray="3 3"/>`;
-  BULAN_S.forEach((bl,i)=>{s+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="8" fill="#334155">${bl}</text>`;});
-  return s+`</svg>`;
-}
-
-/* ── filter setup ── */
 function isiTahun(){
   el('fTahun').innerHTML = Object.keys(TAHUN).sort().reverse().map(t=>`<option value="${t}"${t===fTahun?' selected':''}>${t}</option>`).join('');
 }
@@ -174,37 +152,6 @@ function render(){
     el('unitNote').innerHTML=`<b>${u.nama}</b> — ${u.grup}. Kontribusi terhadap total PLN Group: <b>${P(u.v[m]/realTotal*100)}%</b>`;
   }
 
-  el('chartYoY').innerHTML=chartYoY(mm);
-  const akhir25=TAHUN["2025"].kum[11]/1e9, t26=TAHUN26.targetThn;
-  el('yoyMini').innerHTML=`
-    <div class="b1"><p class="k">YTD ${BULAN_S[mm]} 2025</p><p class="v" style="font-size:15px">${M(y25)} M</p></div>
-    <div class="b1"><p class="k">YTD ${BULAN_S[mm]} 2026</p><p class="v" style="font-size:15px;color:#1B62D6">${M(y26)} M</p></div>
-    <div class="${yoyPct>=0?'b2':'b4'}"><p class="k">Pertumbuhan</p><p class="v" style="font-size:15px;color:${yoyPct>=0?'#15803D':'#B91C1C'}">${yoyPct>=0?'+':''}${P(yoyPct)}%</p></div>
-    <div class="b3"><p class="k">Target 2026 vs Real 2025</p><p class="v" style="font-size:15px;color:#B45309">${P((t26-akhir25)/akhir25*100)}%</p><p class="s">${P(t26)} M vs ${P(akhir25)} M</p></div>`;
-
-  const map25=new Map(TAHUN["2025"].units.filter(d=>d.key).map(d=>[d.key,d]));
-  const KEY_2026 = { "Kantor Pusat":"KP","PUSDIKLAT":"PUSDIKLAT","UID Jakarta Raya":"UID-JKT","UID Jawa Timur":"UID-JATIM","UID Jawa Barat":"UID-JABAR","UID Bali":"UID-BALI",
-    "UID Jawa Tengah":"UID-JATENG","UID Yogyakarta":"UID-JATENG","UIT JBT":"UIT-TENGAH","UID Sulselrabar":"UID-SULSELRABAR","UID S2JB":"UID-S2JB","UID Kalselteng":"UID-KALSELTENG",
-    "UID Sumbar":"UID-SUMBAR","UID Kaltimra":"UID-KALTIMRA","UIT JBB":"UIT-BARAT","UID Suluttenggo":"UID-SULUTTENGGO","UID Sumut":"UID-SUMUT","PUSLITBANG":"PUSLITBANG",
-    "UID Kalbar":"UID-KALBAR","UID Aceh":"UID-ACEH","UID Riau & Kepri":"UID-RIAUKEPRI","UIP3B Sumatera":"UIP3B-SUM","UIP Jawa Bagian Timur":"UIP-JBTB","UIP Jawa Bagian Barat":"UIP-JBB",
-    "UIP SBS":"UIP-SBS","UIK Tanjung Jati B":"UIK-TJB","PUSHARLIS":"PUSHARLIS","UIT JBTB":"UIT-TIMURBALI","UID Banten":"UID-BANTEN","UIW MMU":"UIW-MMU","UIP Kalimantan Bag Timur":"UIP-KALTIM",
-    "UIP3B Kalimantan":"UIP3B-KAL","PUSMANPRO":"PUSMANPRO","UIW NTT":"UIW-NTT","UID Lampung":"UID-LAMPUNG","UIP SBT":"UIP-SBT","UIP3B Sulawesi":"UIP3B-SUL","UIP2B Jamali":"UIP2B-JAMALI",
-    "UIW P2B":"UIW-P2B","UIW Bangka Belitung":"UIW-BABEL","UIW NTB":"UIW-NTB","UIP Sulawesi":"UIP-SULAWESI","UIP SBU":"UIP-SBU","PUSERTIF":"PUSERTIF","UIP Kalimantan Bag Barat":"UIP-KALBAR",
-    "UIP Maluku Papua":"UIP-MALPA","UIP Nusa Tenggara":"UIP-NUSRA","PLN NP":"PLN-NP","PLN IP":"PLN-IP","PLN Batam":"PLN-BATAM","PLN Icon Plus":"PLN-ICON" };
-  const agg=(arr,idx)=>{const map=new Map();
-    arr.forEach(d=>{const k=KEY_2026[d.nama]||d.key; if(!k) return; const e=map.get(k)||{nama:[],v:0,grup:d.grup};
-      e.nama.push(d.nama); e.v+=(d.v[idx]||0); map.set(k,e);});
-    map.forEach(e=>e.nama=e.nama.join(' + ')); return map;};
-  const a25=agg(TAHUN["2025"].units,mm), a26=agg(TAHUN26.units,mm);
-  const mover=[...a26.entries()].filter(([k,e])=>a25.has(k)&&(fKelompok==='semua'||e.grup===fKelompok))
-    .map(([k,e])=>({nama:e.nama,a:a25.get(k).v,b:e.v,delta:e.v-a25.get(k).v}));
-  const naik=[...mover].sort((x,y)=>y.delta-x.delta).slice(0,6);
-  const turun=[...mover].sort((x,y)=>x.delta-y.delta).slice(0,4).filter(o=>o.delta<0).reverse();
-  el('moverNote').innerHTML=`Posisi kumulatif <b>${BULAN[mm]}</b> 2026 dibanding periode sama 2025.`;
-  el('tblMover').querySelector('tbody').innerHTML=
-    naik.map(o=>`<tr><td>${o.nama}</td><td class="num">${JT(o.a)}</td><td class="num">${JT(o.b)}</td><td class="num up">+${JT(o.delta)}</td></tr>`).join('')+
-    (turun.length?`<tr><td colspan="4" style="padding-top:9px;font-size:10px;letter-spacing:.06em;color:#B91C1C;font-weight:700">PENURUNAN TERBESAR</td></tr>`:'')+
-    turun.map(o=>`<tr><td>${o.nama}</td><td class="num">${JT(o.a)}</td><td class="num">${JT(o.b)}</td><td class="num down">${JT(o.delta)}</td></tr>`).join('');
 
   const aktif=lingkup.filter(d=>d.v[m]>0), nol=lingkup.filter(d=>d.v[m]<=0);
   const stagnan=m>0?lingkup.filter(d=>d.v[m]>0&&d.v[m]-d.v[m-1]<=0):[];
@@ -222,6 +169,7 @@ function render(){
     :`<tr><td colspan="3" style="color:#64748B;padding:14px 6px">Seluruh unit dalam lingkup ini mencatat pertumbuhan.</td></tr>`;
 
   const kp=units[0]?.v[m]||0, kontribKP=realTotal? kp/realTotal*100 : 0, ins=[];
+  const akhir25=TAHUN["2025"].kum[11]/1e9, t26=TAHUN26.targetThn;
   ins.push([capaian>=100?'ok':'warn',`Realisasi YTD <b>Rp ${M(realTotal)} M</b> — <b>${P(capaian)}%</b> dari target ${BULAN[m]} dan <b>${P(progThn)}%</b> dari target tahunan ${fTahun}.`]);
   ins.push([yoyPct>=0?'ok':'bad',`Dibanding periode sama 2025 (${BULAN[mm]}), pendapatan <b>${yoyPct>=0?'tumbuh':'turun'} ${P(Math.abs(yoyPct))}%</b> — Rp ${M(y26)} M vs Rp ${M(y25)} M.`]);
   ins.push(['warn',`Target 2026 (Rp ${P(t26)} M) <b>${P(Math.abs((t26-akhir25)/akhir25*100))}% lebih rendah</b> dari realisasi 2025 (Rp ${P(akhir25)} M) — perlu ditinjau apakah target sudah mencerminkan potensi aset.`]);
