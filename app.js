@@ -33,18 +33,51 @@ function chartCombo(cfg,m){
   BULAN_S.forEach((b,i)=>{s+=`<text x="${x(i)}" y="${H-9}" text-anchor="middle" font-size="10" fill="${i<=m?'#334155':'#CBD5E1'}">${b}</text>`;});
   return s+`</svg>`;
 }
-function chartUnit(v,m,nama){
-  const W=440,H=270,L=46,R=16,T=26,B=28,iw=W-L-R,ih=H-T-B;
-  const arr=v.slice(0,m+1),maks=Math.max(...arr.map(a=>a/1e9),0.001)*1.3;
-  const x=i=>L+(arr.length<2?iw/2:iw/(arr.length-1)*i),y=n=>T+ih-(n/maks)*ih;
-  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren ${nama}">`;
+/* Peta nama unit 2026 -> kunci padanan, untuk mencari deret 2025-nya.
+   Catatan: UID Jawa Tengah dan UID Yogyakarta dua-duanya berasal dari
+   "UID Jawa Tengah & DIY" (2025), begitu juga UIP Jawa Bagian Timur & UIP JBTB. */
+const KEY_2026 = { "Kantor Pusat":"KP","PUSDIKLAT":"PUSDIKLAT","UID Jakarta Raya":"UID-JKT","UID Jawa Timur":"UID-JATIM","UID Jawa Barat":"UID-JABAR","UID Bali":"UID-BALI",
+  "UID Jawa Tengah":"UID-JATENG","UID Yogyakarta":"UID-JATENG","UIT JBT":"UIT-TENGAH","UID Sulselrabar":"UID-SULSELRABAR","UID S2JB":"UID-S2JB","UID Kalselteng":"UID-KALSELTENG",
+  "UID Sumbar":"UID-SUMBAR","UID Kaltimra":"UID-KALTIMRA","UIT JBB":"UIT-BARAT","UID Suluttenggo":"UID-SULUTTENGGO","UID Sumut":"UID-SUMUT","PUSLITBANG":"PUSLITBANG",
+  "UID Kalbar":"UID-KALBAR","UID Aceh":"UID-ACEH","UID Riau & Kepri":"UID-RIAUKEPRI","UIP3B Sumatera":"UIP3B-SUM","UIP Jawa Bagian Timur":"UIP-JBTB","UIP JBTB":"UIP-JBTB","UIP Jawa Bagian Barat":"UIP-JBB",
+  "UIP SBS":"UIP-SBS","UIK Tanjung Jati B":"UIK-TJB","PUSHARLIS":"PUSHARLIS","UIT JBTB":"UIT-TIMURBALI","UID Banten":"UID-BANTEN","UIW MMU":"UIW-MMU","UIP Kalimantan Bag Timur":"UIP-KALTIM",
+  "UIP3B Kalimantan":"UIP3B-KAL","PUSMANPRO":"PUSMANPRO","UIW NTT":"UIW-NTT","UID Lampung":"UID-LAMPUNG","UIP SBT":"UIP-SBT","UIP3B Sulawesi":"UIP3B-SUL","UIP2B Jamali":"UIP2B-JAMALI",
+  "UIW P2B":"UIW-P2B","UIW Bangka Belitung":"UIW-BABEL","UIW NTB":"UIW-NTB","UIP Sulawesi":"UIP-SULAWESI","UIP SBU":"UIP-SBU","PUSERTIF":"PUSERTIF","UIP Kalimantan Bag Barat":"UIP-KALBAR",
+  "UIP Maluku Papua":"UIP-MALPA","UIP Nusa Tenggara":"UIP-NUSRA","PLN NP":"PLN-NP","PLN IP":"PLN-IP","PLN Batam":"PLN-BATAM","PLN Icon Plus":"PLN-ICON" };
+
+/* Cari deret 2025 yang sepadan dengan unit 2026 terpilih */
+function deret2025(namaUnit2026){
+  const key = KEY_2026[namaUnit2026];
+  if(!key) return null;
+  const u = DATA_2025.units.find(d=>d.key===key);
+  return u ? u.v : null;
+}
+
+function chartUnit(v26, v25, m, nama){
+  const W=440,H=280,L=46,R=16,T=30,B=28,iw=W-L-R,ih=H-T-B;
+  const a26 = v26.slice(0,m+1);
+  const a25 = v25 ? v25.slice(0,m+1) : null;
+  const semua = a25 ? a26.concat(a25) : a26;
+  const maks = Math.max(...semua.map(a=>a/1e9), 0.001)*1.32;
+  const x=i=>L+(a26.length<2?iw/2:iw/(a26.length-1)*i), y=n=>T+ih-(n/maks)*ih;
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren ${nama} 2026 dibanding 2025">`;
   for(let g=0;g<=4;g++){const val=maks/4*g;s+=`<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" stroke="#EEF2F7"/><text x="${L-6}" y="${y(val)+3.5}" text-anchor="end" font-size="9.5" fill="#94A3B8">${val.toLocaleString('id-ID',{maximumFractionDigits:val<1?1:0})}</text>`;}
-  s+=`<text x="${L-6}" y="${T-10}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
-  s+=`<polyline points="${arr.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
-  arr.forEach((n,i)=>{
+  s+=`<text x="${L-6}" y="${T-12}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
+
+  // deret 2025 (abu-abu, garis putus-putus) digambar dulu agar berada di belakang
+  if(a25){
+    s+=`<polyline points="${a25.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-dasharray="5 3"/>`;
+    a25.forEach((n,i)=>{
+      s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="2.8" fill="#94A3B8"/>`;
+      const anchor = i===0 ? 'start' : (i===a25.length-1 ? 'end' : 'middle');
+      s+=`<text x="${x(i)}" y="${y(n/1e9)+14}" text-anchor="${anchor}" font-size="9" fill="#94A3B8">${M(n)}</text>`;
+    });
+  }
+  // deret 2026 (biru tegas)
+  s+=`<polyline points="${a26.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
+  a26.forEach((n,i)=>{
     s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="3.4" fill="#1B62D6"/>`;
-    // label nilai di SETIAP bulan; digeser agar tidak keluar bidang di ujung kiri/kanan
-    const anchor = i===0 ? 'start' : (i===arr.length-1 ? 'end' : 'middle');
+    const anchor = i===0 ? 'start' : (i===a26.length-1 ? 'end' : 'middle');
     s+=`<text x="${x(i)}" y="${y(n/1e9)-10}" text-anchor="${anchor}" font-size="10" font-weight="700" fill="#0B2A66">${M(n)}</text>`;
     s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9.5" fill="#64748B">${BULAN_S[i]}</text>`;
   });
@@ -148,8 +181,21 @@ function render(){
 
   const u=units.find(d=>d.nama===fUnit) || units[0];
   if(u){
-    el('chartUnit').innerHTML=chartUnit(u.v,m,u.nama);
-    el('unitNote').innerHTML=`<b>${u.nama}</b> — ${u.grup}. Kontribusi terhadap total PLN Group: <b>${P(u.v[m]/realTotal*100)}%</b>`;
+    const v25 = (fTahun==="2026") ? deret2025(u.nama) : null;
+    el('chartUnit').innerHTML=chartUnit(u.v, v25, m, u.nama);
+    let nota = `<b>${u.nama}</b> — ${u.grup}. Kontribusi terhadap total PLN Group: <b>${P(u.v[m]/realTotal*100)}%</b>`;
+    if(v25){
+      const a=v25[m]||0, b=u.v[m]||0;
+      const pct = a ? (b-a)/a*100 : null;
+      nota += `<br>${BULAN[m]}: 2026 <b>${M(b)}</b> vs 2025 <b>${M(a)}</b>`;
+      if(pct!==null) nota += ` — <b style="color:${pct>=0?'#15803D':'#B91C1C'}">${pct>=0?'+':''}${P(pct)}%</b>`;
+      const key = KEY_2026[u.nama];
+      if(key==="UID-JATENG") nota += `<br><span style="color:#B45309">Catatan: deret 2025 adalah UID Jawa Tengah &amp; DIY (sebelum pemekaran menjadi UID Jawa Tengah dan UID Yogyakarta).</span>`;
+      if(key==="UIP-JBTB") nota += `<br><span style="color:#B45309">Catatan: deret 2025 adalah UIP Jawa Bagian Timur &amp; Bali.</span>`;
+    }else if(fTahun==="2026"){
+      nota += `<br><span style="color:#B45309">Tidak ada data pembanding 2025 untuk unit ini.</span>`;
+    }
+    el('unitNote').innerHTML = nota;
   }
 
 
