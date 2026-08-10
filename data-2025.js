@@ -1,5 +1,14 @@
 /* ══ DATA 2025 — historis, sudah closed, tidak berubah lagi ══ */
-const G = {KP:"Kantor Pusat", UID:"Unit Induk Distribusi & Wilayah", UIT:"Unit Induk Transmisi & Pembangkitan", UIP:"Unit Induk Pembangunan", PUS:"Pusat-Pusat", AP:"Anak Perusahaan"};
+const G = {
+  KP:  "Kantor Pusat",
+  UID: "Unit Induk Distribusi & Wilayah",   // UID, UIW
+  UIT: "Unit Induk Transmisi",              // UIT
+  P2B: "Unit Induk Penyaluran & Pusat Pengatur Beban", // UIP2B, UIP3B
+  KIT: "Unit Induk Pembangkitan",           // UIK
+  UIP: "Unit Induk Pembangunan",            // UIP
+  PUS: "Pusat-Pusat",
+  AP:  "Anak Perusahaan"
+};
 
 const DATA_2025 = {
   n:12,
@@ -62,13 +71,24 @@ const DATA_2025 = {
 DATA_2025.units = DATA_2025.units.map(([nama,grup,key,v])=>({nama,grup,key,v}));
 DATA_2025.kum = Array.from({length:DATA_2025.n},(_,m)=>DATA_2025.units.reduce((a,d)=>a+d.v[m],0));
 
-/* Kelompok/grup lookup by name — dipakai untuk data 2026 hasil fetch (yang tidak punya info grup) */
-const KELOMPOK_LOOKUP = {};
-DATA_2025.units.forEach(u=> KELOMPOK_LOOKUP[u.nama] = u.grup);
-// tambahan nama yang berbeda di 2026 (pemekaran/rename) supaya tetap kebaca grupnya
-KELOMPOK_LOOKUP["UID Jawa Tengah"] = G.UID;
-KELOMPOK_LOOKUP["UID Yogyakarta"] = G.UID;
-KELOMPOK_LOOKUP["UIP JBTB"] = G.UIP;
-KELOMPOK_LOOKUP["UIP Jawa Bagian Timur"] = G.UIT;
-KELOMPOK_LOOKUP["PLN ICON PLUS"] = G.AP;
-function grupUntuk(nama){ return KELOMPOK_LOOKUP[nama] || "Lainnya"; }
+/* Penentuan kelompok unit BERBASIS ATURAN NAMA (bukan daftar hafalan),
+   supaya nama unit baru/singkatan yang belum pernah muncul tetap terkelompok benar.
+   Nomenklatur: UIT = Unit Induk Transmisi; UIP2B = Unit Induk Pusat Pengatur Beban;
+   UIP3B = Unit Induk Penyaluran dan Pusat Pengatur Beban; UIP = Unit Induk Pembangunan;
+   UIK = Unit Induk Pembangkitan; UID = Unit Induk Distribusi; UIW = Unit Induk Wilayah. */
+function grupUntuk(nama){
+  const n = String(nama||'').trim().toUpperCase();
+  if(!n) return "Lainnya";
+  if(n === "KANTOR PUSAT") return G.KP;
+  if(n.startsWith("PLN ")) return G.AP;                       // anak perusahaan: PLN NP/IP/Batam/Icon Plus
+  if(n.startsWith("PUS")) return G.PUS;                       // PUSDIKLAT, PUSLITBANG, PUSHARLIS, PUSMANPRO, PUSERTIF
+  if(n.startsWith("UIP3B") || n.startsWith("UIP2B")) return G.P2B;
+  if(n.startsWith("UIT")) return G.UIT;
+  if(n.startsWith("UIK")) return G.KIT;
+  if(n.startsWith("UIP")) return G.UIP;                       // sisanya UIP = pembangunan
+  if(n.startsWith("UID") || n.startsWith("UIW")) return G.UID; // termasuk UIW P2B = Wilayah Papua dan Papua Barat
+  return "Lainnya";
+}
+
+/* Terapkan aturan yang sama ke data 2025, supaya konsisten dengan data 2026 hasil fetch */
+DATA_2025.units.forEach(u => { u.grup = grupUntuk(u.nama); });
