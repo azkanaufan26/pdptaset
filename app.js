@@ -26,7 +26,7 @@ function chartCombo(cfg,m){
   for(let g=0;g<=4;g++){const v=maks/4*g;s+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="#EEF2F7"/><text x="${L-7}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="#94A3B8">${v}</text>`;}
   s+=`<text x="${L-7}" y="${T-10}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
   cfg.target.forEach((t,i)=>{const bw=iw/12*0.56;s+=`<rect x="${x(i)-bw/2}" y="${y(t)}" width="${bw}" height="${T+ih-y(t)}" rx="2" fill="#93C5FD"/>`;
-    if(i<=m)s+=`<text x="${x(i)}" y="${y(t)-5}" text-anchor="middle" font-size="9" fill="#64748B">${P(t)}</text>`;});
+    s+=`<text x="${x(i)}" y="${y(t)-5}" text-anchor="middle" font-size="9" fill="${i<=m?'#64748B':'#B4C3D6'}">${P(t)}</text>`;});
   const seri=cfg.kum.slice(0,m+1);
   s+=`<polyline points="${seri.map((v,i)=>`${x(i)},${y(v/1e9)}`).join(' ')}" fill="none" stroke="#0B2A66" stroke-width="2.6" stroke-linejoin="round"/>`;
   seri.forEach((v,i)=>{s+=`<circle cx="${x(i)}" cy="${y(v/1e9)}" r="3.6" fill="#0B2A66"/><text x="${x(i)}" y="${y(v/1e9)-11}" text-anchor="middle" font-size="10" font-weight="700" fill="#0B2A66">${M(v)}</text>`;});
