@@ -53,32 +53,54 @@ function deret2025(namaUnit2026){
   return u ? u.v : null;
 }
 
+/* Pilih satuan sumbu Y otomatis mengikuti besaran nilai unit yang sedang dilihat,
+   supaya unit kecil (puluhan/ratusan juta) tidak tampil sebagai 0,04 M yang tak terbaca. */
+function skalaOtomatis(maxRp){
+  if(maxRp >= 1e9){
+    const v = maxRp/1e9;
+    return {div:1e9, sat:'Rp Miliar', dec: v>=100?0:2};
+  }
+  if(maxRp >= 1e6){
+    const v = maxRp/1e6;
+    return {div:1e6, sat:'Rp Juta', dec: v>=100?0:1};
+  }
+  if(maxRp >= 1e3) return {div:1e3, sat:'Rp Ribu', dec:0};
+  return {div:1, sat:'Rp', dec:0};
+}
+const fmtSkala = (n, sk) => (n/sk.div).toLocaleString('id-ID',{minimumFractionDigits:sk.dec, maximumFractionDigits:sk.dec});
+
 function chartUnit(v26, v25, m, nama){
-  const W=440,H=280,L=46,R=16,T=30,B=28,iw=W-L-R,ih=H-T-B;
+  const W=440,H=280,L=52,R=16,T=30,B=28,iw=W-L-R,ih=H-T-B;
   const a26 = v26.slice(0,m+1);
   const a25 = v25 ? v25.slice(0,m+1) : null;
   const semua = a25 ? a26.concat(a25) : a26;
-  const maks = Math.max(...semua.map(a=>a/1e9), 0.001)*1.32;
+  const maxRp = Math.max(...semua, 0);
+  const sk = skalaOtomatis(maxRp);
+  const maks = Math.max(...semua.map(a=>a/sk.div), 0.001)*1.32;
   const x=i=>L+(a26.length<2?iw/2:iw/(a26.length-1)*i), y=n=>T+ih-(n/maks)*ih;
   let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren ${nama} 2026 dibanding 2025">`;
-  for(let g=0;g<=4;g++){const val=maks/4*g;s+=`<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" stroke="#EEF2F7"/><text x="${L-6}" y="${y(val)+3.5}" text-anchor="end" font-size="9.5" fill="#94A3B8">${val.toLocaleString('id-ID',{maximumFractionDigits:val<1?1:0})}</text>`;}
-  s+=`<text x="${L-6}" y="${T-12}" text-anchor="end" font-size="9" fill="#94A3B8">Rp M</text>`;
+  for(let g=0;g<=4;g++){
+    const val=maks/4*g;
+    const lbl = val.toLocaleString('id-ID',{maximumFractionDigits: val>=100?0:(val>=10?0:1)});
+    s+=`<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" stroke="#EEF2F7"/><text x="${L-6}" y="${y(val)+3.5}" text-anchor="end" font-size="9.5" fill="#94A3B8">${lbl}</text>`;
+  }
+  s+=`<text x="${L-6}" y="${T-12}" text-anchor="end" font-size="9" fill="#94A3B8">${sk.sat}</text>`;
 
   // deret 2025 (abu-abu, garis putus-putus) digambar dulu agar berada di belakang
   if(a25){
-    s+=`<polyline points="${a25.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-dasharray="5 3"/>`;
+    s+=`<polyline points="${a25.map((n,i)=>`${x(i)},${y(n/sk.div)}`).join(' ')}" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-dasharray="5 3"/>`;
     a25.forEach((n,i)=>{
-      s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="2.8" fill="#94A3B8"/>`;
+      s+=`<circle cx="${x(i)}" cy="${y(n/sk.div)}" r="2.8" fill="#94A3B8"/>`;
       const anchor = i===0 ? 'start' : (i===a25.length-1 ? 'end' : 'middle');
-      s+=`<text x="${x(i)}" y="${y(n/1e9)+14}" text-anchor="${anchor}" font-size="9" fill="#94A3B8">${M(n)}</text>`;
+      s+=`<text x="${x(i)}" y="${y(n/sk.div)+14}" text-anchor="${anchor}" font-size="9" fill="#94A3B8">${fmtSkala(n,sk)}</text>`;
     });
   }
   // deret 2026 (biru tegas)
-  s+=`<polyline points="${a26.map((n,i)=>`${x(i)},${y(n/1e9)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
+  s+=`<polyline points="${a26.map((n,i)=>`${x(i)},${y(n/sk.div)}`).join(' ')}" fill="none" stroke="#1B62D6" stroke-width="2.6"/>`;
   a26.forEach((n,i)=>{
-    s+=`<circle cx="${x(i)}" cy="${y(n/1e9)}" r="3.4" fill="#1B62D6"/>`;
+    s+=`<circle cx="${x(i)}" cy="${y(n/sk.div)}" r="3.4" fill="#1B62D6"/>`;
     const anchor = i===0 ? 'start' : (i===a26.length-1 ? 'end' : 'middle');
-    s+=`<text x="${x(i)}" y="${y(n/1e9)-10}" text-anchor="${anchor}" font-size="10" font-weight="700" fill="#0B2A66">${M(n)}</text>`;
+    s+=`<text x="${x(i)}" y="${y(n/sk.div)-10}" text-anchor="${anchor}" font-size="10" font-weight="700" fill="#0B2A66">${fmtSkala(n,sk)}</text>`;
     s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9.5" fill="#64748B">${BULAN_S[i]}</text>`;
   });
   return s+`</svg>`;
@@ -186,8 +208,10 @@ function render(){
     let nota = `<b>${u.nama}</b> — ${u.grup}. Kontribusi terhadap total PLN Group: <b>${P(u.v[m]/realTotal*100)}%</b>`;
     if(v25){
       const a=v25[m]||0, b=u.v[m]||0;
+      // pakai satuan yang sama dengan sumbu Y grafik di atasnya
+      const sk = skalaOtomatis(Math.max(...u.v.slice(0,m+1), ...v25.slice(0,m+1), 0));
       const pct = a ? (b-a)/a*100 : null;
-      nota += `<br>${BULAN[m]}: 2026 <b>${M(b)}</b> vs 2025 <b>${M(a)}</b>`;
+      nota += `<br>${BULAN[m]}: 2026 <b>${fmtSkala(b,sk)}</b> vs 2025 <b>${fmtSkala(a,sk)}</b> <span style="color:var(--teks-3)">(${sk.sat})</span>`;
       if(pct!==null) nota += ` — <b style="color:${pct>=0?'#15803D':'#B91C1C'}">${pct>=0?'+':''}${P(pct)}%</b>`;
       const key = KEY_2026[u.nama];
       if(key==="UID-JATENG") nota += `<br><span style="color:#B45309">Catatan: deret 2025 adalah UID Jawa Tengah &amp; DIY (sebelum pemekaran menjadi UID Jawa Tengah dan UID Yogyakarta).</span>`;
