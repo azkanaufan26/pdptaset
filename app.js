@@ -11,13 +11,13 @@ let dataSourceNote = "";
 
 /* Segala error skrip dilaporkan ke status bar. Tanpa ini, satu file yang
    gagal dimuat membuat dashboard berhenti di "Memuat…" tanpa keterangan. */
+let errorSkrip = [];
 window.addEventListener('error', function(ev){
   try{
+    errorSkrip.push((ev.message || 'error tidak diketahui') +
+      (ev.filename ? '  [' + ev.filename.split('/').pop() + ':' + ev.lineno + ']' : ''));
     const bar = document.getElementById('liveStatus');
-    if(bar && bar.className.indexOf('ok') === -1){
-      setLiveStatus('warn', 'Error: ' + (ev.message || 'tidak diketahui') +
-        (ev.filename ? '  [' + ev.filename.split('/').pop() + ':' + ev.lineno + ']' : ''));
-    }
+    if(bar && bar.className.indexOf('ok') === -1) setLiveStatus('bad', errorSkrip.join('  ·  '));
   }catch(_){}
 });
 
@@ -329,6 +329,13 @@ function bootSafe(withData, isLive, note){
   if(typeof FALLBACK_2026 === 'undefined') hilang.push('data-2026-fallback.js');
   if(typeof grupUntuk     !== 'function')  hilang.push('data-2025.js (fungsi grupUntuk)');
   if(typeof loadLiveData  !== 'function')  hilang.push('gviz-fetch.js');
+  if(errorSkrip.length){
+    // Ada file yang gagal DIEKSEKUSI (bukan sekadar tidak ada). Pesan aslinya
+    // jauh lebih menunjuk penyebab daripada sekadar "file tidak termuat".
+    setLiveStatus('bad', 'Error skrip: ' + errorSkrip.join('  ·  ') +
+      (hilang.length ? '  →  akibatnya belum tersedia: ' + hilang.join(', ') : ''));
+    return;
+  }
   if(hilang.length){
     setLiveStatus('bad', 'File berikut tidak termuat: ' + hilang.join(', ') +
       ' — pastikan file tersebut ada di repo dan nama filenya persis sama (huruf besar/kecil berpengaruh).');
