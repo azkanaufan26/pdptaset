@@ -143,6 +143,61 @@ tr:last-child td{border-bottom:none}
 .izin-modal-body table{font-size:11.5px}
 .izin-modal-body th{position:sticky;top:0;background:#fff}
 @media (max-width:860px){.izin-modal{max-height:90vh}}
+
+/* ══ Routing antar view ══ */
+[data-view]{display:none}
+[data-view].on{display:block}
+section.grid4[data-view].on{display:grid}
+section.grid-mid[data-view].on{display:grid}
+section.grid-bot[data-view].on{display:grid}
+.filters[hidden]{display:none}
+
+/* ══ Halaman pemilih dashboard ══ */
+.chooser{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px;max-width:900px}
+.pick{background:#fff;border:1px solid var(--garis);border-radius:14px;padding:26px 24px;cursor:pointer;
+  text-align:left;font-family:var(--sans);transition:border-color .18s,box-shadow .18s,transform .18s}
+.pick:hover{border-color:var(--biru);box-shadow:0 10px 26px rgba(11,42,102,.12);transform:translateY(-2px)}
+.pick .pic{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;margin-bottom:16px}
+.pick h3{margin:0;font-size:16.5px;font-weight:800;color:var(--navy);letter-spacing:-.01em;line-height:1.3}
+.pick p{margin:7px 0 0;font-size:12.5px;color:var(--teks-2);line-height:1.55}
+.pick .go{margin-top:15px;font-size:12px;font-weight:700;color:var(--biru);display:flex;align-items:center;gap:6px}
+@media (max-width:860px){.chooser{grid-template-columns:1fr}}
+
+/* ══ Tabel data lengkap ══ */
+.tbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.tbar input[type=search]{font-family:var(--sans);font-size:12px;padding:8px 11px;border:1px solid #CBD5E1;
+  border-radius:7px;min-width:210px;color:var(--teks)}
+.seg{display:flex;border:1px solid #CBD5E1;border-radius:7px;overflow:hidden}
+.seg button{font-family:var(--sans);font-size:11.5px;font-weight:600;padding:8px 13px;border:none;
+  background:#fff;color:var(--teks-2);cursor:pointer}
+.seg button.on{background:var(--biru);color:#fff}
+.tcount{margin-left:auto;font-size:11.5px;color:var(--teks-2)}
+.twrap{overflow:auto;max-height:520px;border:1px solid var(--garis);border-radius:9px}
+.twrap table{font-size:11px}
+.twrap th{position:sticky;top:0;background:#F8FAFD;z-index:2;cursor:pointer;white-space:nowrap;user-select:none}
+.twrap th:hover{color:var(--biru)}
+.twrap th.sorted{color:var(--biru)}
+.twrap th .ar{font-size:9px;margin-left:3px}
+.twrap td{white-space:nowrap}
+.twrap tbody tr:hover{background:#F8FAFD}
+.twrap .unm{font-weight:600;position:sticky;left:0;background:#fff;z-index:1}
+.twrap tbody tr:hover .unm{background:#F8FAFD}
+.twrap tfoot td{position:sticky;bottom:0;background:#F1F5F9;font-weight:800;border-top:2px solid var(--garis)}
+.gpill{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;
+  background:#F1F5F9;color:#475569;white-space:nowrap}
+
+/* ══ Analisis ══ */
+.anal{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;margin-top:14px}
+.anal h3{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#1E293B;margin:18px 0 8px}
+.anal h3:first-child{margin-top:0}
+.anal p{font-size:12.5px;line-height:1.65;color:#1E293B;margin:0 0 10px}
+.anal .src{font-size:11px;color:var(--teks-2);font-style:italic;margin-top:14px}
+.metrik{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metrik div{border:1px solid var(--garis);border-radius:9px;padding:11px 12px}
+.metrik .k{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teks-2);margin:0}
+.metrik .v{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:3px 0 0}
+.metrik .s{font-size:10.5px;color:var(--teks-2);margin:2px 0 0;line-height:1.45}
+@media (max-width:1240px){.anal{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -153,12 +208,10 @@ tr:last-child td{border-bottom:none}
       <div id="brandFallback" style="display:none;color:#fff;font-size:19px;font-weight:800;letter-spacing:.08em;padding:6px 2px">PLN</div>
     </div>
     <nav class="nav">
-      <a href="#" class="on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 1 7v8h5v-5h4v5h5V7L8 1Z"/></svg>Dashboard</a>
-      <a href="#ringkasan"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 1h6v6H1V1Zm8 0h6v6H9V1ZM1 9h6v6H1V9Zm8 0h6v6H9V9Z"/></svg>Ringkasan</a>
-      <a href="#realisasi"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 13h2v2H1v-2Zm4-6h2v8H5V7Zm4-4h2v12H9V3Zm4 7h2v5h-2v-5Z"/></svg>Realisasi</a>
-      <a href="#izinprinsip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h9l3 3v11H2V1Zm2 5h7M4 8h7M4 10h5"/></svg>Izin Prinsip</a>
-      <a href="#unit"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h7v14H2V1Zm8 5h4v9h-4V6ZM4 3h3v2H4V3Zm0 4h3v2H4V7Zm0 4h3v2H4v-2Z"/></svg>Unit</a>
-      <a href="#insight"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a5 5 0 0 0-3 9v2h6V9a5 5 0 0 0-3-9ZM5 13h6v1.5H5V13Z"/></svg>Analisis</a>
+      <a href="#home" data-nav="home" class="on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 1 7v8h5v-5h4v5h5V7L8 1Z"/></svg>Dashboard</a>
+      <a href="#realisasi" data-nav="tabel-realisasi"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 13h2v2H1v-2Zm4-6h2v8H5V7Zm4-4h2v12H9V3Zm4 7h2v5h-2v-5Z"/></svg>Realisasi</a>
+      <a href="#izinprinsip" data-nav="tabel-izin"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h9l3 3v11H2V1Zm2 5h7M4 8h7M4 10h5"/></svg>Izin Prinsip</a>
+      <a href="#analisis" data-nav="analisis"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a5 5 0 0 0-3 9v2h6V9a5 5 0 0 0-3-9ZM5 13h6v1.5H5V13Z"/></svg>Analisis</a>
       <a href="#" onclick="window.print();return false"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 1h8v4H4V1ZM2 6h12v5h-2v4H4v-4H2V6Zm4 5h4v3H6v-3Z"/></svg>Cetak Laporan</a>
     </nav>
     <div class="sidenote">
@@ -172,8 +225,8 @@ tr:last-child td{border-bottom:none}
   <main class="main">
     <div class="topbar">
       <div>
-        <h1>Dashboard Monitoring Pendapatan Aset Properti</h1>
-        <p class="sub">KPI Beyond kWh — Pendayagunaan Aset Properti (Tanah dan Bangunan) PLN Group</p>
+        <h1 id="judulHalaman">Dashboard Monitoring Pendapatan Aset Properti</h1>
+        <p class="sub" id="subHalaman">KPI Beyond kWh — Pendayagunaan Aset Properti (Tanah dan Bangunan) PLN Group</p>
         <p class="per">Periode: <span id="perLabel">—</span></p>
       </div>
       <div class="upd">
@@ -185,17 +238,39 @@ tr:last-child td{border-bottom:none}
 
     <div id="liveStatus" class="livebar loading"><span class="dot loading"></span><span id="liveStatusText">Memuat data terbaru dari Google Sheets…</span></div>
 
-    <div class="filters">
+    <div class="filters" id="filterBar">
       <div class="f"><label for="fTahun">Tahun</label><select id="fTahun"></select></div>
       <div class="f"><label for="fBulan">Posisi s.d.</label><select id="fBulan"></select></div>
       <div class="f"><label for="fKelompok">Kelompok</label><select id="fKelompok"></select></div>
-      <div class="f"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
+      <div class="f" id="fUnitWrap"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
       <button id="reset"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8a6 6 0 1 1-1.8-4.3M14 1v4h-4"/></svg>Reset Filter</button>
     </div>
 
-    <section id="ringkasan" class="grid4"></section>
+    <!-- ══ VIEW: pemilih dashboard ══ -->
+    <section data-view="home" class="on">
+      <div class="chooser">
+        <button class="pick" data-goto="dash-pendapatan">
+          <span class="pic" style="background:var(--biru-soft)">
+            <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="#1B62D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 14h14M3 14V8m3.5 6V4M10 14V6.5M13.5 14V2"/></svg>
+          </span>
+          <h3>Dashboard Monitoring<br>Pendapatan Aset Properti</h3>
+          <p>Realisasi pendapatan sewa dan pendayagunaan aset properti seluruh unit terhadap target RKAP — KPI Beyond kWh.</p>
+          <span class="go">Buka dashboard <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 2l6 6-6 6"/></svg></span>
+        </button>
+        <button class="pick" data-goto="dash-izin">
+          <span class="pic" style="background:#F5F0FF">
+            <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5h6.5L13 5v9.5H3V1.5ZM9.5 1.5V5H13M5.5 8h5M5.5 10.5h3.5"/></svg>
+          </span>
+          <h3>Dashboard Realisasi<br>Persetujuan Izin Prinsip</h3>
+          <p>Rekapitulasi surat persetujuan izin prinsip pendayagunaan aset per unit induk, beserta sebaran jenis dan jumlah asetnya.</p>
+          <span class="go">Buka dashboard <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 2l6 6-6 6"/></svg></span>
+        </button>
+      </div>
+    </section>
 
-    <section id="realisasi" class="grid-mid">
+    <section id="ringkasan" class="grid4" data-view="dash-pendapatan"></section>
+
+    <section id="realisasi" class="grid-mid" data-view="dash-pendapatan">
       <div class="card">
         <h2>Top 10 Kontributor</h2>
         <ul class="tk" id="topKontributor"></ul>
@@ -214,9 +289,9 @@ tr:last-child td{border-bottom:none}
       </div>
     </section>
 
-    <section id="izinprinsip">
+    <section id="izinprinsip" data-view="dash-izin">
       <div class="shead"><h2>Dashboard Realisasi Persetujuan Izin Prinsip</h2></div>
-      <p style="font-size:11.5px;color:var(--teks-2);margin:-6px 0 12px">Sumber: Daftar Persetujuan Izin Prinsip 2026 s.d. Bulan Juli — Divisi Umum &amp; Aset Properti.</p>
+      <p style="font-size:11.5px;color:var(--teks-2);margin:-6px 0 12px" id="izinSumber">Memuat data izin prinsip…</p>
 
       <div class="grid4" id="izinKpi" style="margin-top:0"></div>
 
@@ -248,7 +323,73 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
 
-    <section class="grid-bot">
+    <!-- ══ VIEW: tabel izin prinsip lengkap ══ -->
+    <section data-view="tabel-izin">
+      <div class="card">
+        <h2>Realisasi Persetujuan Izin Prinsip — Seluruh Unit</h2>
+        <p style="font-size:11px;color:var(--teks-2);margin:-6px 0 12px" id="izinSumber2">Memuat data izin prinsip…</p>
+        <div class="tbar">
+          <input type="search" id="izinCari" placeholder="Cari lokasi aset atau unit…" aria-label="Cari izin prinsip">
+          <div class="f"><label for="izinFilterUnit">Unit Induk</label><select id="izinFilterUnit"></select></div>
+          <span class="tcount" id="izinTabelCount"></span>
+        </div>
+        <div class="twrap"><table id="izinTabel"></table></div>
+        <p style="font-size:11px;color:var(--teks-2);margin:10px 0 0">
+          Satu surat izin prinsip dapat mencakup beberapa aset; baris bertanda <b>↑ surat sama</b> mengikuti tanggal surat di atasnya.
+          Kategori jenis aset dikelompokkan otomatis dari kata kunci pada teks lokasi.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══ VIEW: tabel realisasi lengkap ══ -->
+    <section data-view="tabel-realisasi">
+      <div class="card">
+        <h2>Realisasi Pendayagunaan Aset Properti — Seluruh Unit</h2>
+        <p style="font-size:11px;color:var(--teks-2);margin:-6px 0 12px">
+          Angka kumulatif sejak Januari, dalam <b>Rp juta</b>. Klik judul kolom untuk mengurutkan.
+          Sumber: Google Sheets — Rekap 5105000101 (GL 5105000101, luar PLN Group).
+        </p>
+        <div class="tbar">
+          <input type="search" id="cariUnit" placeholder="Cari nama unit…" aria-label="Cari nama unit">
+          <div class="seg" role="group" aria-label="Mode angka">
+            <button id="modeKum" class="on">Kumulatif</button>
+            <button id="modeBln">Tambahan / bulan</button>
+          </div>
+          <span class="tcount" id="tblCount"></span>
+        </div>
+        <div class="twrap"><table id="tblUnit"></table></div>
+      </div>
+
+      <div class="grid-yoy">
+        <div class="card">
+          <h2 id="judulBarUnit">Perbandingan Antar Unit</h2>
+          <div id="chartBarUnit"></div>
+        </div>
+        <div class="card">
+          <h2>Tren Kumulatif — Lingkup Terpilih</h2>
+          <div class="legend"><span><i style="background:#1B62D6"></i>Realisasi kumulatif</span></div>
+          <div id="chartLingkup"></div>
+          <p style="font-size:11px;color:var(--teks-2);margin:6px 0 0" id="lingkupNote"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ VIEW: analisis ══ -->
+    <section data-view="analisis">
+      <div class="anal">
+        <div class="card">
+          <h2>Analisis Realisasi Pendayagunaan Aset Properti</h2>
+          <div class="metrik" id="analMetrik"></div>
+          <div id="analTulisan"></div>
+        </div>
+        <div class="card ins">
+          <h2>Temuan Otomatis dari Data</h2>
+          <ul id="analOtomatis"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-bot" data-view="dash-pendapatan">
       <div class="card">
         <h2>Status Realisasi Unit Induk, Pusat &amp; Anak Perusahaan</h2>
         <div class="mini" id="statUnit"></div>
@@ -280,6 +421,8 @@ tr:last-child td{border-bottom:none}
 <script src="gviz-fetch.js"></script>
 <script src="app.js"></script>
 <script src="data-izin-prinsip.js"></script>
+<script src="izin-fetch.js"></script>
 <script src="izin-prinsip.js"></script>
+<script src="views.js"></script>
 </body>
 </html>
