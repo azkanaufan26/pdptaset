@@ -1,180 +1,148 @@
-/* ══ Live fetch dari Google Sheets (Rekap 5105000101) via Google Visualization API ══
-   Teknik JSONP (script tag), bukan fetch()/XHR — supaya tidak terkendala CORS,
-   karena endpoint gviz Google tidak selalu mengirim header CORS untuk permintaan lintas-origin. */
+/* ══════════════════════════════════════════════════════════════════
+   izin-fetch.js — Ambil data Izin Prinsip langsung dari Google Sheets
 
-const GVIZ_FILE_ID = "1pJ7S4GBoa8O0Fi-KOsVtTlOzBZSnsAQ0ea9bUS-v5F4";
-const GVIZ_GID = "1664615468"; // tab "Rekap 5105000101"
-const GVIZ_TIMEOUT_MS = 12000;
+   Sumber: file yang sama dengan data pendapatan, tab "Rekap 5105000101",
+   rentang B151:F214 (baris 151 = header, 152–214 = 63 baris aset).
 
-const BULAN_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+   Tiga hal yang membuat rentang ini tidak bisa dibaca lurus begitu saja:
 
-function cellText(row, idx){
-  const c = row && row.c && row.c[idx];
-  if(!c || c.v === null || c.v === undefined) return null;
-  return String(c.v).trim();
-}
-function cellNum(row, idx){
-  const c = row && row.c && row.c[idx];
-  if(!c || c.v === null || c.v === undefined || c.v === '') return 0;
-  const n = Number(c.v);
-  return isNaN(n) ? 0 : n;
-}
-/* Normalisasi teks sel: buang non-breaking space, rapatkan spasi ganda,
-   samakan huruf besar — supaya "UNIT  INDUK", "Unit Induk", dsb tetap cocok. */
-function norm(v){
+   1. KOLOM TANGGAL TER-MERGE. Hanya baris pertama tiap surat yang berisi
+      tanggal; baris berikutnya kosong. Google mengirim sel kosong apa
+      adanya, jadi tanggal harus diisi turun (forward-fill) — kalau tidak,
+      31 dari 63 aset akan kehilangan bulan dan grafik tren jadi salah.
+      Sel tanggal yang terisi sekaligus menandai AWAL SURAT BARU, dan
+      itulah dasar penghitungan "jumlah surat".
+
+   2. KOLOM D TERSEMBUNYI. Rentang B:F berisi lima kolom (B,C,D,E,F) dan
+      Google tetap mengirim kolom D yang disembunyikan. Karena itu posisi
+      kolom tidak di-hardcode, melainkan dikenali dari isinya.
+
+   3. FORMAT TANGGAL BERUBAH-UBAH. gviz bisa mengirim "Date(2026,0,6)",
+      objek tanggal, atau teks "6 Januari 2026" tergantung format sel.
+      Ketiganya ditangani.
+   ══════════════════════════════════════════════════════════════════ */
+
+const IZIN_FILE_ID = "1pJ7S4GBoa8O0Fi-KOsVtTlOzBZSnsAQ0ea9bUS-v5F4";
+const IZIN_GID     = "1664615468";
+const IZIN_RANGE   = "B151:F214";
+const IZIN_TIMEOUT_MS = 12000;
+
+const BLN_NAMA = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+function izTeks(row, i){
+  const c = row && row.c && row.c[i];
+  if(!c) return '';
+  const v = (c.f !== undefined && c.f !== null && c.f !== '') ? c.f : c.v;
   if(v === null || v === undefined) return '';
-  return String(v).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
+  return String(v).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
 }
 
-function diagnosaIsi(rows){
-  // Ambil contoh isi sel yang tidak kosong, untuk ditampilkan di pesan error
-  const contoh = [];
-  for(let r=0; r<Math.min(rows.length, 15) && contoh.length<10; r++){
-    const cArr = (rows[r] && rows[r].c) || [];
-    for(let c=0; c<cArr.length && contoh.length<10; c++){
-      const t = cellText(rows[r], c);
-      if(t !== null && t !== '') contoh.push('R'+r+'C'+c+'="'+String(t).slice(0,22)+'"');
-    }
+/* Kembalikan {y,m,d} atau null. Menerima "Date(2026,0,6)", objek Date,
+   angka serial, dan teks berbahasa Indonesia "6 Januari 2026". */
+function izTanggal(row, i){
+  const c = row && row.c && row.c[i];
+  if(!c) return null;
+  const v = c.v;
+
+  if(v instanceof Date && !isNaN(v)) return {y:v.getFullYear(), m:v.getMonth(), d:v.getDate()};
+
+  if(typeof v === 'string'){
+    const g = v.match(/^Date\((\d+),(\d+),(\d+)/);
+    if(g) return {y:+g[1], m:+g[2], d:+g[3]};
   }
-  return 'total baris='+rows.length+'; isi awal: '+(contoh.join(', ') || '(semua kosong)');
+
+  // Teks terformat, mis. "6 Januari 2026" (bisa ada di c.f)
+  const t = izTeks(row, i);
+  if(t){
+    const g = t.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+    if(g){
+      const mi = BLN_NAMA.findIndex(b => b.toLowerCase() === g[2].toLowerCase());
+      if(mi > -1) return {y:+g[3], m:mi, d:+g[1]};
+    }
+    const g2 = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);  // 6/1/2026
+    if(g2) return {y:+g2[3], m:+g2[2]-1, d:+g2[1]};
+  }
+  return null;
 }
 
-/* Cari kolom Januari lewat OFFSET dari nama bulan mana pun yang ketemu.
-   Penting: Google membuang teks header pada kolom yang isinya angka, sehingga
-   "Januari".."Juli" sering hilang dan hanya menyisakan bulan yang kolomnya masih
-   kosong (mis. "Agustus" di kolom 11 -> Januari pasti di kolom 11-7 = 4). */
-function cariJanColDariBulan(cells){
-  for(let c=0;c<cells.length;c++){
-    const t = norm(cells[c]);
-    if(!t) continue;
-    const idx = BULAN_ID.findIndex(b => norm(b) === t);
-    if(idx > -1){
-      const janCol = c - idx;
-      if(janCol >= 0) return janCol;
+/* Kenali peran tiap kolom dari isinya, bukan dari posisinya. */
+function izKenaliKolom(rows){
+  const nKol = Math.max(...rows.map(r => (r && r.c) ? r.c.length : 0), 0);
+  const skor = [];
+  for(let c=0; c<nKol; c++){
+    let tanggal=0, angka=0, unit=0, panjang=0, isi=0;
+    for(const r of rows){
+      const t = izTeks(r, c);
+      if(t === '') continue;
+      isi++;
+      if(izTanggal(r, c)) tanggal++;
+      if(/^\d+$/.test(t)) angka++;
+      if(/^(UID|UIP|UIT|UIW|UIK|PLN|KANTOR PUSAT|PUSDIKLAT|PUSLITBANG|PUSHARLIS|PUSMANPRO|PUSERTIF)/i.test(t)) unit++;
+      panjang += t.length;
     }
+    skor.push({c, isi, tanggal, angka, unit, rata: isi ? panjang/isi : 0});
   }
-  return -1;
-}
+  const pilih = (f) => skor.filter(s=>s.isi>0).sort(f)[0];
+  const kTgl  = pilih((a,b)=> b.tanggal - a.tanggal);
+  const kUnit = pilih((a,b)=> b.unit - a.unit);
+  const kNo   = pilih((a,b)=> b.angka - a.angka);
+  // Lokasi = kolom teks terpanjang yang bukan kolom unit
+  const kLok  = skor.filter(s => s.isi>0 && s.c !== (kUnit&&kUnit.c)).sort((a,b)=> b.rata - a.rata)[0];
 
-function findHeaderRow(rows, cols){
-  const labelCells = (cols||[]).map(c => (c && c.label) ? c.label : '');
-
-  // Cara 1: baris yang memuat "UNIT INDUK"
-  for(let r=0;r<rows.length;r++){
-    const cArr = (rows[r] && rows[r].c) || [];
-    for(let c=0;c<cArr.length;c++){
-      if(norm(cellText(rows[r],c)).indexOf("UNIT INDUK") > -1){
-        const isiBaris = cArr.map((_,i)=>cellText(rows[r],i));
-        let janCol = cariJanColDariBulan(isiBaris);
-        if(janCol < 0) janCol = cariJanColDariBulan(labelCells); // coba dari label kolom
-        if(janCol > -1) return { headerRow:r, unitCol:c, janCol };
-      }
-    }
-  }
-  // Cara 2: baris mana pun yang memuat minimal satu nama bulan
-  for(let r=0;r<rows.length;r++){
-    const cArr = (rows[r] && rows[r].c) || [];
-    const isiBaris = cArr.map((_,i)=>cellText(rows[r],i));
-    const janCol = cariJanColDariBulan(isiBaris);
-    if(janCol > -1){
-      let unitCol = -1;
-      for(let c=janCol-1;c>=0;c--){ if(norm(cellText(rows[r],c)) !== ''){ unitCol=c; break; } }
-      if(unitCol < 0) unitCol = Math.max(janCol-1, 0);
-      return { headerRow:r, unitCol, janCol };
-    }
-  }
-  throw new Error('Struktur sheet tidak dikenali (nama bulan tidak ketemu di baris mana pun). DIAGNOSA: ' + diagnosaIsi(rows));
-}
-function parseUnitTable(rows, headerInfo){
-  const { headerRow, unitCol, janCol } = headerInfo;
-  const units = []; let totalRow = null;
-  for(let r=headerRow+1; r<rows.length; r++){
-    const nama = cellText(rows[r], unitCol);
-    if(nama === null || String(nama).trim()==='') continue;  // baris kosong pemisah — lewati
-    const N = norm(nama);
-    if(/^[A-Z]$/.test(N)) continue;                          // baris penanda kolom "a b c d ..."
-    if(N === "UNIT INDUK") continue;                         // header duplikat
-    if(N === "TOTAL" || N === "GRAND TOTAL" || N === "JUMLAH"){
-      totalRow = BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)); break;
-    }
-    units.push({ nama, grup: (typeof grupUntuk==='function'?grupUntuk(nama):"Lainnya"), v: BULAN_ID.map((_,i)=>cellNum(rows[r], janCol+i)) });
-  }
-  if(!totalRow){
-    // TOTAL tidak ketemu — kalau unit sudah terbaca, hitung sendiri sebagai cadangan
-    if(units.length){
-      totalRow = BULAN_ID.map((_,i)=>units.reduce((a,u)=>a+(u.v[i]||0),0));
-    }else{
-      throw new Error('Baris unit dan "TOTAL" tidak ditemukan setelah header. DIAGNOSA: ' + diagnosaIsi(rows));
-    }
-  }
-  return { units, totalRow };
-}
-function findLastRowByLabel(rows, label){
-  const L = norm(label);
-  let found=null;
-  for(let r=0;r<rows.length;r++){
-    const cArr = (rows[r] && rows[r].c) || [];
-    for(let c=0;c<cArr.length;c++){ if(norm(cellText(rows[r],c))===L){ found={row:r,labelCol:c}; } }
-  }
-  return found;
-}
-function parseTargetBlock(rows){
-  const real = findLastRowByLabel(rows, "Pendapatan Aset Properti");
-  const target = findLastRowByLabel(rows, "Target Bulanan");
-  if(!real || !target) return null;   // biarkan pemanggil memakai cadangan
+  if(!kUnit || !kUnit.unit) throw new Error('Kolom "Unit Induk" tidak ditemukan di rentang ' + IZIN_RANGE + '.');
+  if(!kLok) throw new Error('Kolom "Lokasi Aset" tidak ditemukan di rentang ' + IZIN_RANGE + '.');
   return {
-    realKum: BULAN_ID.map((_,i)=>cellNum(rows[real.row], real.labelCol+1+i)),
-    targetKum: BULAN_ID.map((_,i)=>cellNum(rows[target.row], target.labelCol+1+i))
-  };
-}
-function parseGvizResponse(resp){
-  let rows = resp.table.rows;
-
-  /* Jaring pengaman: kalau Google tetap "memakan" baris judul dan memindahkannya
-     jadi label kolom (resp.table.cols[].label), bangun ulang baris itu di depan
-     supaya pencarian header tetap ketemu. */
-  const cols = resp.table.cols || [];
-  const adaLabel = cols.some(c => c && c.label && String(c.label).trim() !== '');
-  if(adaLabel){
-    const barisJudul = { c: cols.map(c => (c && c.label) ? { v: c.label } : null) };
-    rows = [barisJudul].concat(rows);
-  }
-
-  const headerInfo = findHeaderRow(rows, cols);
-  const { units, totalRow } = parseUnitTable(rows, headerInfo);
-
-  let blok = parseTargetBlock(rows);
-  if(!blok){
-    // Blok target/realisasi tidak ketemu di sheet — pakai target RKAP 2026 yang sudah diketahui,
-    // dan realisasi dihitung dari baris TOTAL. Dashboard tetap tampil dengan angka benar.
-    blok = {
-      realKum: totalRow.slice(),
-      targetKum: [5909472831.80,9236251512.40,11818962795.10,48753291720.50,53924094433.43,
-                  59833586257.23,67959137926.53,79778122553.83,86399624239.13,95991138363.43,
-                  115770114336.53,147737300000.00]
-    };
-  }
-  const { realKum, targetKum } = blok;
-  // n = berapa bulan yang sudah terisi (nilai realKum > 0)
-  let n = 0; for(let i=0;i<12;i++){ if(realKum[i]>0) n=i+1; }
-  const targetPct = targetKum.map(v => Math.round((v / targetKum[11]) * 10000)/100);
-  return {
-    n, target: targetKum.map(v=>v/1e9), targetPct, targetThn: targetKum[11]/1e9,
-    units: units.map(u=>({ nama:u.nama, grup:u.grup, v:u.v.slice(0,n) })),
-    kum: realKum.slice(0,n),
-    totalRowSheet: totalRow.slice(0,n)
+    no:  kNo  ? kNo.c  : -1,
+    tgl: (kTgl && kTgl.tanggal) ? kTgl.c : -1,
+    unit: kUnit.c,
+    lokasi: kLok.c
   };
 }
 
-/* ══ Loader dengan JSONP + timeout + fallback ══ */
-function loadLiveData(onSuccess, onFailure){
+function izParse(resp){
+  const rows = (resp.table && resp.table.rows) || [];
+  if(!rows.length) throw new Error('Rentang ' + IZIN_RANGE + ' kosong.');
+
+  const K = izKenaliKolom(rows);
+  const out = [];
+  let tglAktif = null;   // untuk mengisi turun sel tanggal yang ter-merge
+  let no = 0;
+
+  for(const r of rows){
+    const unit   = izTeks(r, K.unit);
+    const lokasi = izTeks(r, K.lokasi);
+
+    // Lewati baris header dan baris kosong
+    if(!unit || !lokasi) continue;
+    if(/^UNIT\s*INDUK$/i.test(unit) || /^LOKASI\s*ASET$/i.test(lokasi)) continue;
+
+    const tglBaris = K.tgl > -1 ? izTanggal(r, K.tgl) : null;
+    const suratBaru = !!tglBaris;              // sel tanggal terisi = surat baru
+    if(tglBaris) tglAktif = tglBaris;
+    if(!tglAktif) continue;                    // aset sebelum tanggal pertama — abaikan
+
+    no++;
+    const pad = n => String(n).padStart(2,'0');
+    out.push({
+      no,
+      tgl: `${tglAktif.y}-${pad(tglAktif.m+1)}-${pad(tglAktif.d)}`,
+      bulan: tglAktif.m,
+      unit, lokasi, suratBaru
+    });
+  }
+
+  if(!out.length) throw new Error('Tidak ada baris aset yang terbaca dari ' + IZIN_RANGE + '.');
+  return out;
+}
+
+function loadIzinData(onSuccess, onFailure){
   let done = false;
-  const cbName = "__pln_gviz_cb_" + Date.now();
+  const cbName = "__pln_izin_cb_" + Date.now();
   const timer = setTimeout(()=>{
     if(done) return; done = true;
     delete window[cbName];
-    onFailure(new Error("Timeout — tidak ada respons dari Google Sheets dalam " + (GVIZ_TIMEOUT_MS/1000) + " detik."));
-  }, GVIZ_TIMEOUT_MS);
+    onFailure(new Error("Timeout — tidak ada respons dari Google Sheets dalam " + (IZIN_TIMEOUT_MS/1000) + " detik."));
+  }, IZIN_TIMEOUT_MS);
 
   window[cbName] = function(resp){
     if(done) return; done = true;
@@ -184,32 +152,13 @@ function loadLiveData(onSuccess, onFailure){
       if(resp.status === 'error'){
         throw new Error((resp.errors && resp.errors[0] && resp.errors[0].detailed_message) || 'Google Sheets mengembalikan error.');
       }
-      const data = parseGvizResponse(resp);
-      onSuccess(data);
+      onSuccess(izParse(resp));
     }catch(e){ onFailure(e); }
   };
 
-  /* Jaring pengaman: kalau karena satu dan lain hal Google tetap memakai handler
-     bawaannya (google.visualization.Query.setResponse) alih-alih callback kita,
-     tangkap juga dari sana supaya tidak berakhir timeout. */
-  window.google = window.google || {};
-  window.google.visualization = window.google.visualization || {};
-  window.google.visualization.Query = window.google.visualization.Query || {};
-  const prevSetResponse = window.google.visualization.Query.setResponse;
-  window.google.visualization.Query.setResponse = function(resp){
-    if(typeof window[cbName] === 'function'){ window[cbName](resp); }
-    else if(typeof prevSetResponse === 'function'){ prevSetResponse(resp); }
-  };
-
   const s = document.createElement('script');
-  // PENTING: parameter di dalam tqx dipisah dengan TITIK DUA (responseHandler:namaFungsi),
-  // bukan tanda sama dengan. Kalau salah, Google mengabaikan callback kita dan
-  // memakai handler bawaannya, sehingga respons tidak pernah sampai -> timeout.
-  // headers=0 : jangan biarkan Google menebak-nebak baris mana yang jadi judul kolom —
-  // kirim SEMUA baris apa adanya, karena baris "UNIT INDUK" ada di tengah sheet (baris 6),
-  // bukan di baris pertama, dan kita mencarinya sendiri lewat teksnya.
-  s.src = "https://docs.google.com/spreadsheets/d/" + GVIZ_FILE_ID + "/gviz/tq?gid=" + GVIZ_GID +
-          "&headers=0&tqx=out:json;responseHandler:" + cbName;
+  s.src = "https://docs.google.com/spreadsheets/d/" + IZIN_FILE_ID + "/gviz/tq?gid=" + IZIN_GID +
+          "&range=" + IZIN_RANGE + "&headers=0&tqx=out:json;responseHandler:" + cbName;
   s.onerror = function(){
     if(done) return; done = true;
     clearTimeout(timer);
