@@ -250,6 +250,10 @@ function render(){
   if(sisa>0&&m<11) ins.push([progThn>=cfg.targetPct[m]?'ok':'warn',`Sisa target <b>Rp ${P(sisa)} M</b> dalam ${11-m} bulan (rata-rata Rp ${P(sisa/(11-m))} M/bulan).`]);
   const ikon={ok:['#16A34A','M2 8l4 4 8-9'],warn:['#F59E0B','M8 1l7 13H1L8 1Zm0 5v4m0 2v.5'],bad:['#DC2626','M4 4l8 8M12 4l-8 8']};
   el('insightList').innerHTML=ins.map(([t,txt])=>`<li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="${ikon[t][0]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ikon[t][1]}"/></svg><span>${txt}</span></li>`).join('');
+
+  // views.js dimuat setelah file ini — pakai penjagaan supaya tidak error
+  // kalau render() sempat berjalan sebelum views.js siap.
+  if(typeof refreshViews === 'function') refreshViews();
 }
 
 /* ══ inisialisasi: coba live fetch dulu, fallback kalau gagal ══ */
