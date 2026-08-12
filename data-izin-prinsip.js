@@ -1,86 +1,99 @@
-/* ══ DATA IZIN PRINSIP — sumber: Daftar Persetujuan Izin Prinsip 2026 s.d. Bulan Juli.xlsx, sheet "Izin Prinsip" ══
-   Setiap baris = satu aset. Kolom: [No, Bulan(1-12), Hari, SuratBaru(baris pertama kelompok surat), Unit Induk, Lokasi Aset, Kategori]
-   Kategori dikelompokkan otomatis dari teks Lokasi Aset (Tanah/Rumah Dinas/Kantor/Gardu Induk/Mess/Lahan Pembangkit/Lainnya) — 
-   koreksi manual di sini kalau ada yang salah kelompok. */
-const IZIN_BULAN = ["","Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const IZIN_BULAN_S = ["","Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+/* ══════════════════════════════════════════════════════════════════
+   data-izin-prinsip.js — DATA CADANGAN Izin Prinsip 2026
 
-const IZIN_ROWS = [
-  [1,1,6,true,"UID Sumut","Space Kantor UP3 Medan","Kantor / Ruang Kerja"],
-  [2,1,6,true,"UID Jateng","Eks Rumah Dinas Ir. Ramlan (JAJAR)","Rumah Dinas / Wisma"],
-  [3,2,18,true,"UIP Sumbagteng","Kantor UPP Sumbagteng 2","Kantor / Ruang Kerja"],
-  [4,2,23,true,"UIP JBT","Kantor UIP JBT","Kantor / Ruang Kerja"],
-  [5,2,26,true,"UIP JBTB","Kantor UPP JBTB 1","Kantor / Ruang Kerja"],
-  [6,2,26,true,"UID Sumut","Space Kantor UID Sumut","Kantor / Ruang Kerja"],
-  [7,3,3,true,"Kantor Pusat","Tanah PLTMG Sambelia","Lahan Pembangkit"],
-  [8,3,3,false,"Kantor Pusat","Tanah PLTMG Sumbawa 2","Lahan Pembangkit"],
-  [9,3,14,true,"UID Sumut","Rumah Dinas Kisaran","Rumah Dinas / Wisma"],
-  [10,3,14,false,"UID Sumut","Tanah Jl. Nias, Medan","Tanah Kosong"],
-  [11,3,16,true,"Kantor Pusat","Tanah PLTD Lueng Bata","Lahan Pembangkit"],
-  [12,3,16,false,"Kantor Pusat","Tanah GI Krueng Raya","Gardu Induk"],
-  [13,3,16,false,"Kantor Pusat","Tanah GITET Ulee Kareng","Tanah Kosong"],
-  [14,3,31,true,"UID Sumbar","Rumah Dinas Tan Malaka, Bukittinggi","Rumah Dinas / Wisma"],
-  [15,5,6,true,"UIP3B Sum","Rumah Operator GI Salak","Gardu Induk"],
-  [16,5,6,false,"UIP3B Sum","Rumah Operator GI Sidikalang","Gardu Induk"],
-  [17,5,6,false,"UIP3B Sum","Rumah Operator GI Sibolga","Gardu Induk"],
-  [18,5,6,false,"UIP3B Sum","Lahan Bangunan Koperasi UP2B","Lainnya"],
-  [19,5,6,false,"UIP3B Sum","Ruang SP UP2B","Lainnya"],
-  [20,5,6,true,"UIP JBB","Mess Elektrikal 2, Depok","Mess"],
-  [21,5,6,false,"UIP JBB","Mess Elektrikal 3, Depok","Mess"],
-  [22,5,6,false,"UIP JBB","Mess Elektrikal 4, Depok","Mess"],
-  [23,5,6,false,"UIP JBB","Mess Elektrikal 5, Depok","Mess"],
-  [24,5,6,false,"UIP JBB","Mess Elektrikal 6, Depok","Mess"],
-  [25,5,6,false,"UIP JBB","Kantor UIP JBB","Kantor / Ruang Kerja"],
-  [26,5,6,false,"UIP JBB","Tanah Bendungan Hilir, Jakarta Pusat","Tanah Kosong"],
-  [27,5,7,true,"UID Jaya","Space Kantor UID Jaya","Kantor / Ruang Kerja"],
-  [28,5,13,true,"Kantor Pusat","Tanah PLTGU Belawan","Lahan Pembangkit"],
-  [29,5,13,true,"Pusdiklat","Space Parkir Kantor Pusdiklat","Kantor / Ruang Kerja"],
-  [30,5,20,true,"UIP JBT","Tanah Akses Jalan PLTU Indramayu","Lahan Pembangkit"],
-  [31,6,8,true,"UIP3B Sul","Tanah Tello","Tanah Kosong"],
-  [32,6,8,true,"UID Sumut","Tanah Jl. Meranti","Tanah Kosong"],
-  [33,6,8,true,"UIP JBB","Tanah Andara, Jakarta Selatan","Tanah Kosong"],
-  [34,6,25,true,"UID BALI","Tanah Kosong Desa Kutampi","Tanah Kosong"],
-  [35,6,25,true,"UID Jateng","Eks Rumah Dinas , Ngarus, Pati","Rumah Dinas / Wisma"],
-  [36,6,25,true,"UIP JBB","Mess Elektrikal IV","Mess"],
-  [37,6,25,true,"UIP JBB","Tanah Marunda","Tanah Kosong"],
-  [38,6,25,true,"UIP JBB","Tanah Tanjung Barat","Tanah Kosong"],
-  [39,6,25,true,"PLN NP","Lahan UP Bakaru Jl. Poros Bakaru","Lainnya"],
-  [40,6,25,false,"PLN NP","Lahan UP Bakaru Kel. Betteng","Lainnya"],
-  [41,6,25,false,"PLN NP","Lahan UP Bakaru, Sabbang Paru","Lainnya"],
-  [42,6,25,false,"PLN NP","Lahan UP Bakaru, Kel. Tadokkong","Lainnya"],
-  [43,6,25,true,"Kantor Pusat","PLTMG Jayapura","Lahan Pembangkit"],
-  [44,6,25,false,"Kantor Pusat","PLTMG Nabire-2","Lahan Pembangkit"],
-  [45,6,25,false,"Kantor Pusat","PLTMG Biak","Lahan Pembangkit"],
-  [46,6,25,false,"Kantor Pusat","PLTMG Manokwari","Lahan Pembangkit"],
-  [47,7,23,true,"UID Jatim","Eks Kantor Rayon Dinoyo","Kantor / Ruang Kerja"],
-  [48,7,23,true,"UID Jaya","Rumah Modernland","Lainnya"],
-  [49,7,23,true,"UID Jatim","Tanah Gardu No. 31, Klojen, Malang","Tanah Kosong"],
-  [50,7,23,true,"UIP3B Sum","Rumah Dinas A8","Rumah Dinas / Wisma"],
-  [51,7,23,true,"UIT JBM","Tanah PLN UPT Surabaya","Kantor / Ruang Kerja"],
-  [52,7,23,false,"UIT JBM","Tanah dan Bangunan Depan GI Blimbing","Gardu Induk"],
-  [53,7,23,false,"UIT JBM","Tanah PLN UPT Malang","Kantor / Ruang Kerja"],
-  [54,7,23,false,"UIT JBM","Tanah Gardu Induk Sekarputih","Gardu Induk"],
-  [55,7,23,false,"UIT JBM","Tanah PLN UPT Probolinggo","Kantor / Ruang Kerja"],
-  [56,7,23,false,"UIT JBM","Tanah Gardu Induk Jember","Gardu Induk"],
-  [57,7,23,false,"UIT JBM","Tanah Gardu Induk Kapal","Gardu Induk"],
-  [58,7,23,false,"UIT JBM","Tanah Gardu Induk Segoromadu","Gardu Induk"],
-  [59,7,23,false,"UIT JBM","Tanah Gardu Induk Sampang","Gardu Induk"],
-  [60,7,23,false,"UIT JBM","Tanah Gardu Induk Segoromadu - 2","Gardu Induk"],
-  [61,7,28,true,"UID Yogyakarta","Eks Gedung ULP Yogyakarta","Kantor / Ruang Kerja"],
-  [62,7,28,false,"UID Yogyakarta","Eks Kantor Jaga Krajan, Kalasan","Kantor / Ruang Kerja"],
-  [63,7,28,false,"UID Yogyakarta","Eks UP3 Sedayu","Kantor / Ruang Kerja"]
+   Dipakai HANYA kalau pengambilan langsung dari Google Sheets gagal
+   (sheet tidak lagi publik, jaringan putus, struktur berubah).
+   Sumber sebenarnya: sheet "Rekap 5105000101" rentang B151:F214.
+
+   Bentuk tiap baris: { no, tgl:"YYYY-MM-DD", bulan:0-11, unit, lokasi }
+   "bulan" ikut disimpan supaya tetap benar walau tanggal gagal diurai.
+   Baris tanpa tanggal di sheet (sel ter-merge) di sini sudah diisi
+   dengan tanggal suratnya; "suratBaru" menandai awal tiap surat.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ══ KOREKSI KATEGORI MANUAL ══════════════════════════════════════
+   Kalau ada aset yang salah kelompok, tulis di sini — entri di tabel
+   ini MENANG atas aturan kata kunci di izin-prinsip.js, dan tetap
+   berlaku walau datanya nanti diambil langsung dari Google Sheets.
+
+   Kunci  = teks Lokasi Aset persis seperti di sheet (huruf besar/kecil
+            bebas; spasi ganda dan tanda baca di ujung diabaikan).
+   Nilai  = salah satu nama kategori di IZ_KATEGORI:
+            "Mess" · "Rumah Dinas / Wisma" · "Gardu Induk" ·
+            "Lahan Pembangkit" · "Kantor / Ruang Kerja" ·
+            "Tanah Kosong" · "Lainnya"
+
+   Contoh — hapus tanda komentar kalau memang ingin dipakai:
+     "RUMAH OPERATOR GI SALAK":      "Gardu Induk",
+     "RUMAH OPERATOR GI SIDIKALANG": "Gardu Induk",
+     "RUMAH OPERATOR GI SIBOLGA":    "Gardu Induk",
+   (pengelompokan lama menaruh tiga aset ini di Gardu Induk;
+    aturan sekarang menaruhnya di Rumah Dinas / Wisma) */
+const IZ_KOREKSI = {
+};
+
+const FALLBACK_IZIN = [
+  {no:1,  tgl:"2026-01-06", bulan:0, unit:"UID Sumut",      lokasi:"Space Kantor UP3 Medan",              suratBaru:true},
+  {no:2,  tgl:"2026-01-06", bulan:0, unit:"UID Jateng",     lokasi:"Eks Rumah Dinas Ir. Ramlan (JAJAR)",  suratBaru:true},
+  {no:3,  tgl:"2026-02-18", bulan:1, unit:"UIP Sumbagteng", lokasi:"Kantor UPP Sumbagteng 2",             suratBaru:true},
+  {no:4,  tgl:"2026-02-23", bulan:1, unit:"UIP JBT",        lokasi:"Kantor UIP JBT",                      suratBaru:true},
+  {no:5,  tgl:"2026-02-26", bulan:1, unit:"UIP JBTB",       lokasi:"Kantor UPP JBTB 1",                   suratBaru:true},
+  {no:6,  tgl:"2026-02-26", bulan:1, unit:"UID Sumut",      lokasi:"Space Kantor UID Sumut",              suratBaru:true},
+  {no:7,  tgl:"2026-03-03", bulan:2, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Sambelia",                suratBaru:true},
+  {no:8,  tgl:"2026-03-03", bulan:2, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Sumbawa 2"},
+  {no:9,  tgl:"2026-03-14", bulan:2, unit:"UID Sumut",      lokasi:"Rumah Dinas Kisaran",                 suratBaru:true},
+  {no:10, tgl:"2026-03-14", bulan:2, unit:"UID Sumut",      lokasi:"Tanah Jl. Nias, Medan"},
+  {no:11, tgl:"2026-03-16", bulan:2, unit:"Kantor Pusat",   lokasi:"Tanah PLTD Lueng Bata",               suratBaru:true},
+  {no:12, tgl:"2026-03-16", bulan:2, unit:"Kantor Pusat",   lokasi:"Tanah GI Krueng Raya"},
+  {no:13, tgl:"2026-03-16", bulan:2, unit:"Kantor Pusat",   lokasi:"Tanah GITET Ulee Kareng"},
+  {no:14, tgl:"2026-03-31", bulan:2, unit:"UID Sumbar",     lokasi:"Rumah Dinas Tan Malaka, Bukittinggi", suratBaru:true},
+  {no:15, tgl:"2026-05-06", bulan:4, unit:"UIP3B Sum",      lokasi:"Rumah Operator GI Salak",             suratBaru:true},
+  {no:16, tgl:"2026-05-06", bulan:4, unit:"UIP3B Sum",      lokasi:"Rumah Operator GI Sidikalang"},
+  {no:17, tgl:"2026-05-06", bulan:4, unit:"UIP3B Sum",      lokasi:"Rumah Operator GI Sibolga"},
+  {no:18, tgl:"2026-05-06", bulan:4, unit:"UIP3B Sum",      lokasi:"Lahan Bangunan Koperasi UP2B"},
+  {no:19, tgl:"2026-05-06", bulan:4, unit:"UIP3B Sum",      lokasi:"Ruang SP UP2B"},
+  {no:20, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Mess Elektrikal 2, Depok",            suratBaru:true},
+  {no:21, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Mess Elektrikal 3, Depok"},
+  {no:22, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Mess Elektrikal 4, Depok"},
+  {no:23, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Mess Elektrikal 5, Depok"},
+  {no:24, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Mess Elektrikal 6, Depok"},
+  {no:25, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Kantor UIP JBB"},
+  {no:26, tgl:"2026-05-06", bulan:4, unit:"UIP JBB",        lokasi:"Tanah Bendungan Hilir, Jakarta Pusat"},
+  {no:27, tgl:"2026-05-07", bulan:4, unit:"UID Jaya",       lokasi:"Space Kantor UID Jaya",               suratBaru:true},
+  {no:28, tgl:"2026-05-13", bulan:4, unit:"Kantor Pusat",   lokasi:"Tanah PLTGU Belawan",                 suratBaru:true},
+  {no:29, tgl:"2026-05-13", bulan:4, unit:"Pusdiklat",      lokasi:"Space Parkir Kantor Pusdiklat",       suratBaru:true},
+  {no:30, tgl:"2026-05-20", bulan:4, unit:"UIP JBT",        lokasi:"Tanah Akses Jalan PLTU Indramayu",    suratBaru:true},
+  {no:31, tgl:"2026-06-08", bulan:5, unit:"UIP3B Sul",      lokasi:"Tanah Tello",                         suratBaru:true},
+  {no:32, tgl:"2026-06-08", bulan:5, unit:"UID Sumut",      lokasi:"Tanah Jl. Meranti",                   suratBaru:true},
+  {no:33, tgl:"2026-06-08", bulan:5, unit:"UIP JBB",        lokasi:"Tanah Andara, Jakarta Selatan",       suratBaru:true},
+  {no:34, tgl:"2026-06-25", bulan:5, unit:"UID BALI",       lokasi:"Tanah Kosong Desa Kutampi",           suratBaru:true},
+  {no:35, tgl:"2026-06-25", bulan:5, unit:"UID JATENG",     lokasi:"Eks Rumah Dinas , Ngarus, Pati",      suratBaru:true},
+  {no:36, tgl:"2026-06-25", bulan:5, unit:"UIP JBB",        lokasi:"Mess Elektrikal IV",                  suratBaru:true},
+  {no:37, tgl:"2026-06-25", bulan:5, unit:"UIP JBB",        lokasi:"Tanah Marunda",                       suratBaru:true},
+  {no:38, tgl:"2026-06-25", bulan:5, unit:"UIP JBB",        lokasi:"Tanah Tanjung Barat",                 suratBaru:true},
+  {no:39, tgl:"2026-06-25", bulan:5, unit:"PLN NP",         lokasi:"Lahan UP Bakaru Jl. Poros Bakaru",    suratBaru:true},
+  {no:40, tgl:"2026-06-25", bulan:5, unit:"PLN NP",         lokasi:"Lahan UP Bakaru Kel. Betteng"},
+  {no:41, tgl:"2026-06-25", bulan:5, unit:"PLN NP",         lokasi:"Lahan UP Bakaru, Sabbang Paru"},
+  {no:42, tgl:"2026-06-25", bulan:5, unit:"PLN NP",         lokasi:"Lahan UP Bakaru, Kel. Tadokkong"},
+  {no:43, tgl:"2026-06-25", bulan:5, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Jayapura",                suratBaru:true},
+  {no:44, tgl:"2026-06-25", bulan:5, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Nabire-2"},
+  {no:45, tgl:"2026-06-25", bulan:5, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Biak"},
+  {no:46, tgl:"2026-06-25", bulan:5, unit:"Kantor Pusat",   lokasi:"Tanah PLTMG Manokwari"},
+  {no:47, tgl:"2026-07-23", bulan:6, unit:"UID Jatim",      lokasi:"Eks Kantor Rayon Dinoyo",             suratBaru:true},
+  {no:48, tgl:"2026-07-23", bulan:6, unit:"UID Jaya",       lokasi:"Rumah Modernland",                    suratBaru:true},
+  {no:49, tgl:"2026-07-23", bulan:6, unit:"UID Jatim",      lokasi:"Tanah Gardu No. 31, Klojen, Malang",  suratBaru:true},
+  {no:50, tgl:"2026-07-23", bulan:6, unit:"UIP3B su",       lokasi:"Rumah Dinas A8",                      suratBaru:true},
+  {no:51, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah PLN UPT Surabaya",              suratBaru:true},
+  {no:52, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah dan Bangunan Depan GI Blimbing"},
+  {no:53, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah PLN UPT Malang"},
+  {no:54, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Sekarputih"},
+  {no:55, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah PLN UPT Probolinggo"},
+  {no:56, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Jember"},
+  {no:57, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Kapal"},
+  {no:58, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Segoromadu"},
+  {no:59, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Sampang"},
+  {no:60, tgl:"2026-07-23", bulan:6, unit:"UIT JBM",        lokasi:"Tanah Gardu Induk Segoromadu - 2"},
+  {no:61, tgl:"2026-07-28", bulan:6, unit:"UID Yogyakarta", lokasi:"Eks Gedung ULP Yogyakarta",           suratBaru:true},
+  {no:62, tgl:"2026-07-28", bulan:6, unit:"UID Yogyakarta", lokasi:"Eks Kantor Jaga Krajan, Kalasan"},
+  {no:63, tgl:"2026-07-28", bulan:6, unit:"UID Yogyakarta", lokasi:"Eks UP3 Sedayu"}
 ];
-
-/* Agregasi (dihitung dari IZIN_ROWS saat load) */
-const IZIN_AGG = (function(){
-  const totalAset = IZIN_ROWS.length;
-  const totalSurat = IZIN_ROWS.filter(r=>r[3]).length;
-  const perBulan = {}; for(let b=1;b<=7;b++) perBulan[b]=0;
-  IZIN_ROWS.forEach(r=>{ perBulan[r[1]] = (perBulan[r[1]]||0)+1; });
-  const perUnit = {};
-  IZIN_ROWS.forEach(r=>{ perUnit[r[4]] = (perUnit[r[4]]||0)+1; });
-  const perKategori = {};
-  IZIN_ROWS.forEach(r=>{ perKategori[r[6]] = (perKategori[r[6]]||0)+1; });
-  const unitTerbanyak = Object.entries(perUnit).sort((a,b)=>b[1]-a[1])[0];
-  return { totalAset, totalSurat, rataRata: totalAset/totalSurat, perBulan, perUnit, perKategori, unitTerbanyak };
-})();
