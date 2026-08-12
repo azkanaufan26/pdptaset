@@ -5,9 +5,21 @@ const JT = n => (n/1e6).toLocaleString('id-ID',{maximumFractionDigits:0});
 const P  = n => n.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1});
 const el = id => document.getElementById(id);
 
-let TAHUN = { "2025": DATA_2025 }; // "2026" ditambahkan setelah data live/fallback siap
+let TAHUN = { "2025": (typeof DATA_2025 !== "undefined" ? DATA_2025 : null) }; // "2026" ditambahkan setelah data live/fallback siap
 let fTahun="2026", fBulan=0, fKelompok="semua", fUnit="Kantor Pusat";
 let dataSourceNote = "";
+
+/* Segala error skrip dilaporkan ke status bar. Tanpa ini, satu file yang
+   gagal dimuat membuat dashboard berhenti di "Memuat…" tanpa keterangan. */
+window.addEventListener('error', function(ev){
+  try{
+    const bar = document.getElementById('liveStatus');
+    if(bar && bar.className.indexOf('ok') === -1){
+      setLiveStatus('warn', 'Error: ' + (ev.message || 'tidak diketahui') +
+        (ev.filename ? '  [' + ev.filename.split('/').pop() + ':' + ev.lineno + ']' : ''));
+    }
+  }catch(_){}
+});
 
 /* ── status bar live ── */
 function setLiveStatus(kind, text){
@@ -311,7 +323,19 @@ function bootSafe(withData, isLive, note){
   }
 }
 
-loadLiveData(
-  function(liveData){ bootSafe(liveData, true); },
-  function(err){ bootSafe(FALLBACK_2026, false, err.message); }
-);
+(function mulai(){
+  const hilang = [];
+  if(typeof DATA_2025     === 'undefined') hilang.push('data-2025.js');
+  if(typeof FALLBACK_2026 === 'undefined') hilang.push('data-2026-fallback.js');
+  if(typeof grupUntuk     !== 'function')  hilang.push('data-2025.js (fungsi grupUntuk)');
+  if(typeof loadLiveData  !== 'function')  hilang.push('gviz-fetch.js');
+  if(hilang.length){
+    setLiveStatus('bad', 'File berikut tidak termuat: ' + hilang.join(', ') +
+      ' — pastikan file tersebut ada di repo dan nama filenya persis sama (huruf besar/kecil berpengaruh).');
+    return;
+  }
+  loadLiveData(
+    function(liveData){ bootSafe(liveData, true); },
+    function(err){ bootSafe(FALLBACK_2026, false, err.message); }
+  );
+})();
