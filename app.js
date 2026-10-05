@@ -8,6 +8,22 @@ const el = id => document.getElementById(id);
 let TAHUN = { "2025": (typeof DATA_2025 !== "undefined" ? DATA_2025 : null) }; // "2026" ditambahkan setelah data live/fallback siap
 let fTahun="2026", fBulan=0, fKelompok="semua", fUnit="Kantor Pusat";
 let dataSourceNote = "";
+let dataLive = null;         // true = data live dari sheet, false = data cadangan, null = belum dimuat
+let tglUpdateSheet = null;   // {teks, tanggal} dari sel "Update data …" di sheet, null kalau belum/tidak ada
+
+/* ── badge "Data diperbarui" di topbar (tampil di semua halaman) ── */
+function tampilkanTglUpdate(){
+  const wrap = el('tglUpdWrap'), lbl = el('tglUpdLabel');
+  if(!wrap || !lbl) return;
+  // saat dashboard memakai data cadangan, tanggal di sheet tidak mewakili angka yang tampil
+  if(tglUpdateSheet && tglUpdateSheet.tanggal && dataLive !== false){
+    lbl.textContent = tglUpdateSheet.tanggal;
+    wrap.title = 'Dari sheet "Rekap 5105000101": ' + tglUpdateSheet.teks;
+    wrap.hidden = false;
+  }else{
+    wrap.hidden = true;
+  }
+}
 
 /* Segala error skrip dilaporkan ke status bar. Tanpa ini, satu file yang
    gagal dimuat membuat dashboard berhenti di "Memuat…" tanpa keterangan. */
@@ -290,11 +306,14 @@ function boot(withData, isLive, note){
   sanitizeUnits(withData);
   TAHUN["2026"] = withData;
   dataSourceNote = note || "";
+  dataLive = !!isLive;
+  tampilkanTglUpdate();
   fTahun="2026"; fBulan=withData.n-1; fKelompok="semua";
   fUnit = withData.units.some(u=>u.nama==="Kantor Pusat") ? "Kantor Pusat" : (withData.units[0]?.nama || "");
   isiTahun(); isiBulan(); isiUnit(); wireFilters(); render();
   if(isLive){
-    setLiveStatus('ok', 'Data 2026 berhasil dimuat langsung dari Google Sheets (posisi bulan ' + BULAN[withData.n-1] + ').');
+    setLiveStatus('ok', 'Data 2026 berhasil dimuat langsung dari Google Sheets (posisi bulan ' + BULAN[withData.n-1] + ').' +
+      (tglUpdateSheet ? ' Data diperbarui ' + tglUpdateSheet.tanggal + '.' : ''));
   }else{
     setLiveStatus('warn', 'Gagal memuat data langsung — menampilkan data cadangan (' + (withData.asOf||'') + '). ' + note);
   }
@@ -340,6 +359,18 @@ function bootSafe(withData, isLive, note){
     setLiveStatus('bad', 'File berikut tidak termuat: ' + hilang.join(', ') +
       ' — pastikan file tersebut ada di repo dan nama filenya persis sama (huruf besar/kecil berpengaruh).');
     return;
+  }
+  // Tanggal update dimuat terpisah (permintaan kecil) — kalau gagal, badge cukup disembunyikan
+  if(typeof loadUpdateLabel === 'function'){
+    loadUpdateLabel(function(hasil){
+      tglUpdateSheet = hasil;
+      tampilkanTglUpdate();
+      const bar = el('liveStatus');
+      if(hasil && bar && bar.className.indexOf(' ok') > -1){
+        const txt = el('liveStatusText');
+        if(txt.textContent.indexOf('Data diperbarui') === -1) txt.textContent += ' Data diperbarui ' + hasil.tanggal + '.';
+      }
+    });
   }
   loadLiveData(
     function(liveData){ bootSafe(liveData, true); },

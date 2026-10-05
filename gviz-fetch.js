@@ -204,6 +204,11 @@ if (typeof window.loadLiveData !== 'function') { (function(){
     window.google.visualization.Query = window.google.visualization.Query || {};
     const prevSetResponse = window.google.visualization.Query.setResponse;
     window.google.visualization.Query.setResponse = function(resp){
+      // respons milik permintaan tanggal update (reqId 7) jangan sampai salah alamat
+      if(resp && String(resp.reqId) === UPD_REQ_ID){
+        if(typeof window.__pln_upd_cb === 'function') window.__pln_upd_cb(resp);
+        return;
+      }
       if(typeof window[cbName] === 'function'){ window[cbName](resp); }
       else if(typeof prevSetResponse === 'function'){ prevSetResponse(resp); }
     };
@@ -227,4 +232,64 @@ if (typeof window.loadLiveData !== 'function') { (function(){
   }
 
   window.loadLiveData = loadLiveData;
+
+  /* ══ Tanggal update data — dibaca dari teks "Update data …" di bagian judul sheet ══
+     Sel judulnya ada di kolom B (mis. B4: "Update data 28 Sept 2026"). Kolom B
+     dianggap kolom ANGKA oleh Google (isinya nomor urut), sehingga teks itu dibuang
+     dari respons utama. Karena itu dibuat permintaan kedua yang kecil, khusus
+     rentang judul (A1:P8): di rentang ini semua kolom bertipe teks, jadi teksnya utuh.
+     Yang dicari: sel mana pun yang memuat kata "update" / "diperbarui" / "pembaruan",
+     jadi sel boleh dipindah selama masih di 8 baris teratas. */
+  const UPD_REQ_ID = "7";
+  const UPD_RANGE = "A1:P8";
+  const POLA_UPD = /(update|diperbarui|pembaruan|pemutakhiran)/i;
+
+  function ambilTanggalDariTeks(teks){
+    const sisa = String(teks)
+      .replace(/^\s*(data\s+)?(last\s+)?(update[d]?|diperbarui|pembaruan|pemutakhiran)(\s+data)?(\s+(per|tanggal|tgl\.?))?\s*[:\-–—]?\s*/i, '')
+      .trim();
+    return sisa || String(teks).trim();
+  }
+
+  function loadUpdateLabel(onDone){
+    let done = false;
+    const cbName = "__pln_upd_cb";
+    const selesai = function(hasil){
+      if(done) return; done = true;
+      clearTimeout(timer);
+      try{ delete window[cbName]; }catch(_){ window[cbName] = undefined; }
+      try{ onDone(hasil); }catch(_){}
+    };
+    const timer = setTimeout(()=>selesai(null), GVIZ_TIMEOUT_MS);
+
+    window[cbName] = function(resp){
+      try{
+        if(!resp || resp.status === 'error' || !resp.table) return selesai(null);
+        const rows = resp.table.rows || [];
+        for(let r=0; r<rows.length; r++){
+          const cArr = (rows[r] && rows[r].c) || [];
+          for(let c=0; c<cArr.length; c++){
+            const sel = cArr[c];
+            if(!sel) continue;
+            const t = (sel.f !== undefined && sel.f !== null) ? sel.f : sel.v;
+            if(t === null || t === undefined) continue;
+            const teks = String(t).replace(/ /g,' ').replace(/\s+/g,' ').trim();
+            if(teks && POLA_UPD.test(teks)){
+              return selesai({ teks: teks, tanggal: ambilTanggalDariTeks(teks) });
+            }
+          }
+        }
+        selesai(null);
+      }catch(_){ selesai(null); }
+    };
+
+    const s = document.createElement('script');
+    s.src = "https://docs.google.com/spreadsheets/d/" + GVIZ_FILE_ID + "/gviz/tq?gid=" + GVIZ_GID +
+            "&headers=0&range=" + UPD_RANGE +
+            "&tqx=reqId:" + UPD_REQ_ID + ";out:json;responseHandler:" + cbName;
+    s.onerror = function(){ selesai(null); };
+    document.head.appendChild(s);
+  }
+
+  window.loadUpdateLabel = loadUpdateLabel;
 })(); }
